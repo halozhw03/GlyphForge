@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Mechanical Arm Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Paper.js -->
+    <script src="https://unpkg.com/paper@0.12.17/dist/paper-full.min.js"></script>
+    
+    <!-- p5.js for right panel simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>2D Mechanical Arm Simulator</h1>
+            <div class="header-controls">
+                <button id="clearAll" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+                <button id="simulate" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Simulate
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Drawing Area -->
+            <div class="left-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-pencil-alt"></i> Path Drawing</h3>
+                </div>
+                
+                <!-- Drawing Tools -->
+                <div class="toolbar">
+                    <div class="tool-group">
+                        <button id="freehandTool" class="tool-btn active" data-tool="freehand" title="Freehand Drawing">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button id="lineTool" class="tool-btn" data-tool="line" title="Polyline Tool">
+                            <i class="fas fa-draw-polygon"></i>
+                        </button>
+                        <button id="bezierTool" class="tool-btn" data-tool="bezier" title="Bezier Curve">
+                            <i class="fas fa-bezier-curve"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="tool-group">
+                        <button id="editTool" class="tool-btn" data-tool="edit" title="Edit Points">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete Path">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label for="smoothing">Smoothing:</label>
+                        <input type="range" id="smoothing" min="0" max="100" value="50" class="slider">
+                        <span id="smoothingValue">50</span>
+                    </div>
+                </div>
+
+                <!-- Drawing Canvas -->
+                <div class="canvas-container">
+                    <canvas id="drawingCanvas" resize></canvas>
+                </div>
+
+                <!-- Path Info -->
+                <div class="path-info">
+                    <div class="info-item">
+                        <span>Paths: </span>
+                        <span id="pathCount">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Total Length: </span>
+                        <span id="totalLength">0 mm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Printer Simulation -->
+            <div class="right-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-cogs"></i> Printer Simulation</h3>
+                </div>
+
+                <!-- Simulation Controls -->
+                <div class="sim-controls">
+                    <div class="control-group">
+                        <label for="printSpeed">Print Speed (mm/s):</label>
+                        <input type="range" id="printSpeed" min="10" max="100" value="30" class="slider">
+                        <span id="speedValue">30</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="workArea">Work Area (mm):</label>
+                        <div class="work-area-inputs">
+                            <input type="number" id="workWidth" value="220" min="100" max="400">
+                            <span>×</span>
+                            <input type="number" id="workHeight" value="220" min="100" max="400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Canvas -->
+                <div class="sim-canvas-container">
+                    <div id="simulationCanvas"></div>
+                </div>
+
+                <!-- Simulation Info -->
+                <div class="sim-info">
+                    <div class="info-item">
+                        <span>Status: </span>
+                        <span id="simStatus">Ready</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Progress: </span>
+                        <span id="simProgress">0%</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Est. Time: </span>
+                        <span id="estTime">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/PathProcessor.js"></script>
+    <script src="js/DrawingCanvas.js"></script>
+    <script src="js/PrinterSimulator.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
