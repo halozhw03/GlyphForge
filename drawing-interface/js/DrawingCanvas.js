@@ -5,12 +5,14 @@ class DrawingCanvas {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.pathProcessor = new PathProcessor();
+        this.shapeLibrary = new ShapeLibrary();
         
         // 初始化Paper.js
         paper.setup(this.canvas);
         
         // 工具状态
         this.currentTool = 'freehand';
+        this.currentShape = 'circle'; // 当前选中的形状
         this.isDrawing = false;
         this.paths = [];
         this.selectedPath = null;
@@ -92,27 +94,34 @@ class DrawingCanvas {
      * 鼠标按下事件
      */
     handleMouseDown(event) {
-        // 在编辑模式下，首先检查是否点击了控制点
-        if (this.currentTool === 'edit') {
-            const hitResult = paper.project.hitTest(event.point, {
-                segments: true,
-                stroke: true,
-                tolerance: 10
-            });
-            
-            // 检查是否点击了控制点
-            if (hitResult && hitResult.item && hitResult.item.name === 'controlPoint') {
-                this.isDragging = true;
-                this.dragTarget = hitResult.item;
-                return;
-            }
-            
-            // 如果没有点击控制点，处理路径选择
-            this.handleEditToolClick(event.point);
+        // 首先检查是否点击了控制点（支持拖拽编辑）
+        const hitResult = paper.project.hitTest(event.point, {
+            segments: true,
+            stroke: true,
+            tolerance: 10
+        });
+        
+        // 检查是否点击了控制点
+        if (hitResult && hitResult.item && hitResult.item.name === 'controlPoint') {
+            this.isDragging = true;
+            this.dragTarget = hitResult.item;
             return;
         }
         
-        // 其他工具清除选择
+        // 检查当前工具，如果是删除工具，直接处理删除
+        if (this.currentTool === 'delete') {
+            this.handleDeleteToolClick(event.point);
+            return;
+        }
+        
+        // 检查是否点击了已存在的用户绘制路径（用于选择和显示控制点）
+        // 排除网格、控制点、预览元素等
+        if (hitResult && hitResult.item && this.isUserDrawnPath(hitResult.item)) {
+            this.selectPath(hitResult.item);
+            return;
+        }
+        
+        // 如果没有点击到路径或控制点，清除选择并处理绘制工具
         this.clearSelection();
         
         switch (this.currentTool) {
@@ -125,8 +134,8 @@ class DrawingCanvas {
             case 'bezier':
                 this.handleBezierToolClick(event.point);
                 break;
-            case 'delete':
-                this.handleDeleteToolClick(event.point);
+            case 'shape':
+                this.handleShapeToolClick(event.point);
                 break;
         }
     }
@@ -137,7 +146,7 @@ class DrawingCanvas {
     handleMouseDrag(event) {
         if (this.currentTool === 'freehand' && this.isDrawing) {
             this.continueFreehandDrawing(event.point);
-        } else if (this.currentTool === 'edit' && this.isDragging && this.dragTarget) {
+        } else if (this.isDragging && this.dragTarget) {
             this.handleControlPointDrag(event.point);
         }
     }
@@ -148,7 +157,7 @@ class DrawingCanvas {
     handleMouseUp(event) {
         if (this.currentTool === 'freehand' && this.isDrawing) {
             this.finishFreehandDrawing();
-        } else if (this.currentTool === 'edit' && this.isDragging) {
+        } else if (this.isDragging) {
             this.finishControlPointDrag();
         }
     }
@@ -225,7 +234,12 @@ class DrawingCanvas {
         
         // 重新创建平滑后的路径
         this.currentPath.remove();
-        this.createPathFromPoints(processedPoints);
+        const newPath = this.createPathFromPoints(processedPoints);
+        
+        // 自动选择新创建的路径并显示控制点
+        if (newPath) {
+            this.selectPath(newPath);
+        }
         
         this.currentPath = null;
         this.currentPoints = [];
@@ -481,6 +495,12 @@ class DrawingCanvas {
         
         const [start, end, cp1, cp2] = this.tempPoints;
         
+        console.log('DrawingCanvas: Creating Bezier curve');
+        console.log('Start:', start);
+        console.log('End:', end);
+        console.log('Control Point 1:', cp1);
+        console.log('Control Point 2:', cp2);
+        
         this.currentPath = new paper.Path();
         this.currentPath.strokeColor = this.strokeColor;
         this.currentPath.strokeWidth = this.strokeWidth;
@@ -492,9 +512,15 @@ class DrawingCanvas {
             new paper.Point(end.x, end.y)
         );
         
+        console.log('DrawingCanvas: Bezier path created, length:', this.currentPath.length);
+        console.log('DrawingCanvas: Bezier path segments:', this.currentPath.segments?.length);
+        
         // 添加到路径列表
         const pathPoints = this.pathProcessor.paperPathToPoints(this.currentPath);
         this.addPathToCollection(this.currentPath, pathPoints);
+        
+        // 自动选择新创建的路径并显示控制点
+        this.selectPath(this.currentPath);
         
         // 清理贝塞尔预览元素
         this.clearBezierPreview();
@@ -505,6 +531,60 @@ class DrawingCanvas {
         
         paper.view.draw();
         this.updatePathInfo();
+    }
+
+    /**
+     * 处理形状工具点击
+     */
+    handleShapeToolClick(point) {
+        // 获取画布尺寸
+        const canvasWidth = this.canvas.clientWidth;
+        const canvasHeight = this.canvas.clientHeight;
+        
+        // 计算合适的大小
+        const defaultSize = this.shapeLibrary.getDefaultSize(this.currentShape, canvasWidth, canvasHeight);
+        
+        // 生成形状路径点
+        const shapePoints = this.shapeLibrary.generateShape(
+            this.currentShape,
+            point.x,
+            point.y,
+            defaultSize
+        );
+        
+        if (shapePoints && shapePoints.length > 0) {
+            // 创建路径
+            const shapePath = this.createPathFromPoints(shapePoints);
+            
+            if (shapePath) {
+                // 自动选择新创建的路径并显示控制点
+                this.selectPath(shapePath);
+                
+                console.log(`Shape created: ${this.currentShape} at (${point.x}, ${point.y}) with size ${defaultSize}`);
+            }
+        }
+        
+        paper.view.draw();
+        this.updatePathInfo();
+    }
+
+    /**
+     * 设置当前形状类型
+     */
+    setCurrentShape(shapeType) {
+        if (this.shapeLibrary.getShapeInfo(shapeType)) {
+            this.currentShape = shapeType;
+            console.log(`Current shape set to: ${shapeType}`);
+        } else {
+            console.warn(`Unknown shape type: ${shapeType}`);
+        }
+    }
+
+    /**
+     * 获取当前形状类型
+     */
+    getCurrentShape() {
+        return this.currentShape;
     }
 
     /**
@@ -542,24 +622,6 @@ class DrawingCanvas {
         }
     }
 
-    /**
-     * 处理编辑工具点击
-     */
-    handleEditToolClick(point) {
-        // 查找点击的路径
-        const hitResult = paper.project.hitTest(point, {
-            segments: true,
-            stroke: true,
-            tolerance: 10
-        });
-        
-        if (hitResult && hitResult.item && hitResult.item.name !== 'grid' && hitResult.item.name !== 'controlPoint') {
-            this.selectPath(hitResult.item);
-        } else {
-            // 如果没有点击到路径，清除选择
-            this.clearSelection();
-        }
-    }
 
     /**
      * 处理控制点拖拽
@@ -612,13 +674,45 @@ class DrawingCanvas {
      * 处理删除工具点击
      */
     handleDeleteToolClick(point) {
+        console.log('Delete tool activated, paths available:', this.paths.length);
+        
+        // 使用更全面的hitTest选项
         const hitResult = paper.project.hitTest(point, {
             stroke: true,
-            tolerance: 10
+            fill: true,
+            segments: true,
+            tolerance: 15
         });
         
-        if (hitResult && hitResult.item && hitResult.item.name !== 'grid') {
+        if (hitResult && hitResult.item && this.isUserDrawnPath(hitResult.item)) {
+            console.log('Deleting path via hitTest');
             this.deletePath(hitResult.item);
+            return;
+        }
+        
+        // 如果hitTest失败，尝试遍历所有路径找到最近的
+        let closestPath = null;
+        let closestDistance = Infinity;
+        
+        this.paths.forEach(pathData => {
+            const path = pathData.path;
+            if (!path || !path.segments) return;
+            
+            // 计算点击位置到路径的大概距离
+            path.segments.forEach(segment => {
+                const distance = point.getDistance(segment.point);
+                if (distance < closestDistance && distance < 25) { // 增加到25像素容差
+                    closestDistance = distance;
+                    closestPath = path;
+                }
+            });
+        });
+        
+        if (closestPath) {
+            console.log('Deleting closest path, distance:', closestDistance);
+            this.deletePath(closestPath);
+        } else {
+            console.log('No path found to delete within tolerance');
         }
     }
 
@@ -803,6 +897,9 @@ class DrawingCanvas {
             const pathPoints = this.pathProcessor.paperPathToPoints(this.currentPath);
             this.addPathToCollection(this.currentPath, pathPoints);
             
+            // 自动选择新创建的路径并显示控制点
+            this.selectPath(this.currentPath);
+            
             this.tempPoints = [];
             this.currentPath = null;
             this.updatePathInfo();
@@ -824,10 +921,8 @@ class DrawingCanvas {
                 break;
             case 'line':
             case 'bezier':
+            case 'shape':
                 this.canvas.style.cursor = 'pointer';
-                break;
-            case 'edit':
-                this.canvas.style.cursor = 'move';
                 break;
             case 'delete':
                 this.canvas.style.cursor = 'not-allowed';
@@ -884,6 +979,36 @@ class DrawingCanvas {
      */
     generatePathId() {
         return 'path_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    /**
+     * 检查是否为用户绘制的路径
+     */
+    isUserDrawnPath(item) {
+        if (!item) return false;
+        
+        // 排除系统元素
+        const excludedNames = [
+            'grid',
+            'controlPoint', 
+            'bezierMarker',
+            'bezierPreview',
+            'bezierControlLine',
+            'bezierMousePreview',
+            'bezierCurvePreview'
+        ];
+        
+        if (excludedNames.includes(item.name)) {
+            return false;
+        }
+        
+        // 检查是否属于网格组
+        if (item.parent && item.parent.name === 'grid') {
+            return false;
+        }
+        
+        // 检查是否有路径数据（用户绘制的路径都会有data属性）
+        return item.data && item.data.id;
     }
 
     /**

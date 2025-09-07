@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Mechanical Arm Simulator</title>
+    <title>3D Mechanical Arm Simulator</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     
     <!-- Paper.js -->
     <script src="https://unpkg.com/paper@0.12.17/dist/paper-full.min.js"></script>
     
-    <!-- p5.js for right panel simulation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <!-- Three.js for 3D simulation -->
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -20,7 +20,7 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>2D Mechanical Arm Simulator</h1>
+            <h1>3D Mechanical Arm Simulator</h1>
             <div class="header-controls">
                 <button id="clearAll" class="btn btn-danger">
                     <i class="fas fa-trash"></i> Clear All
@@ -54,19 +54,28 @@
                     </div>
                     
                     <div class="tool-group">
-                        <button id="editTool" class="tool-btn" data-tool="edit" title="Edit Points">
-                            <i class="fas fa-edit"></i>
+                        <button id="shapeTool" class="tool-btn" data-tool="shape" title="Preset Shapes">
+                            <i class="fas fa-shapes"></i>
                         </button>
+                        <div id="shapeSelector" class="shape-selector hidden">
+                            <button class="shape-btn" data-shape="circle" title="Circle">
+                                <i class="fas fa-circle"></i>
+                            </button>
+                            <button class="shape-btn" data-shape="star" title="Star">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            <button class="shape-btn" data-shape="heart" title="Heart">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-group">
                         <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete Path">
                             <i class="fas fa-eraser"></i>
                         </button>
                     </div>
                     
-                    <div class="tool-group">
-                        <label for="smoothing">Smoothing:</label>
-                        <input type="range" id="smoothing" min="0" max="100" value="50" class="slider">
-                        <span id="smoothingValue">50</span>
-                    </div>
                 </div>
 
                 <!-- Drawing Canvas -->
@@ -90,7 +99,7 @@
             <!-- Right Panel - Printer Simulation -->
             <div class="right-panel">
                 <div class="panel-header">
-                    <h3><i class="fas fa-cogs"></i> Printer Simulation</h3>
+                    <h3><i class="fas fa-cube"></i> 3D Work Area</h3>
                 </div>
 
                 <!-- Simulation Controls -->
@@ -111,9 +120,9 @@
                     </div>
                 </div>
 
-                <!-- Simulation Canvas -->
+                <!-- 3D Canvas -->
                 <div class="sim-canvas-container">
-                    <div id="simulationCanvas"></div>
+                    <div id="threejsCanvas"></div>
                 </div>
 
                 <!-- Simulation Info -->
@@ -137,8 +146,10 @@
 
     <!-- Scripts -->
     <script src="js/PathProcessor.js"></script>
+    <script src="js/ShapeLibrary.js"></script>
     <script src="js/DrawingCanvas.js"></script>
-    <script src="js/PrinterSimulator.js"></script>
+    <script src="js/SimpleOrbitControls.js"></script>
+    <script src="js/ThreeJSWorkArea.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

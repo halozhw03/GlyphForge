@@ -87,6 +87,24 @@ body {
     background: #c53030;
 }
 
+.btn-success {
+    background: #38a169;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #2f855a;
+}
+
+.btn-warning {
+    background: #d69e2e;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #b7791f;
+}
+
 /* Main Content */
 .main-content {
     display: flex;
@@ -110,11 +128,13 @@ body {
 .left-panel {
     flex: 1;
     min-width: 400px;
+    max-width: 50%;
 }
 
 .right-panel {
     flex: 1;
     min-width: 400px;
+    max-width: 50%;
 }
 
 .panel-header {
@@ -207,13 +227,6 @@ body {
     border: none;
 }
 
-/* Smoothing value display */
-#smoothingValue {
-    min-width: 30px;
-    font-weight: 500;
-    color: #4a5568;
-    font-size: 0.9rem;
-}
 
 /* Canvas Containers */
 .canvas-container, .sim-canvas-container {
@@ -232,9 +245,18 @@ body {
     cursor: crosshair;
 }
 
-#simulationCanvas {
+#threejsCanvas {
     width: 100%;
     height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#threejsCanvas canvas {
+    display: block;
+    /* 让Three.js完全控制canvas的尺寸 */
 }
 
 /* Simulation Controls */
@@ -356,6 +378,57 @@ body {
 .status-running { color: #3182ce; }
 .status-paused { color: #d69e2e; }
 .status-error { color: #e53e3e; }
+
+/* Shape Selector Styles */
+.shape-selector {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    margin-top: 0.25rem;
+}
+
+.shape-selector.hidden {
+    display: none;
+}
+
+.shape-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.shape-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: scale(1.05);
+}
+
+.shape-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.tool-group {
+    position: relative;
+}
 
 /* Tooltip Styles */
 [title] {

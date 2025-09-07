@@ -246,15 +246,57 @@ class PathProcessor {
     paperPathToPoints(path) {
         const points = [];
         const length = path.length;
-        const step = Math.max(1, length / 100); // 限制最大点数为100
 
-        for (let offset = 0; offset <= length; offset += step) {
-            const point = path.getPointAt(offset);
-            if (point) {
-                points.push({ x: point.x, y: point.y });
+        console.log('PathProcessor: Converting path to points');
+        console.log('Path length:', length);
+        console.log('Path segments:', path.segments?.length);
+        
+        // 如果路径有segments，也打印出来看看
+        if (path.segments) {
+            console.log('Path segments:', path.segments.map(seg => ({ 
+                point: { x: seg.point.x, y: seg.point.y },
+                handleIn: seg.handleIn ? { x: seg.handleIn.x, y: seg.handleIn.y } : null,
+                handleOut: seg.handleOut ? { x: seg.handleOut.x, y: seg.handleOut.y } : null
+            })));
+        }
+
+        // 检查是否是贝塞尔曲线（有控制点的路径）
+        const hasCurves = path.segments && path.segments.some(seg => 
+            (seg.handleIn && (seg.handleIn.x !== 0 || seg.handleIn.y !== 0)) ||
+            (seg.handleOut && (seg.handleOut.x !== 0 || seg.handleOut.y !== 0))
+        );
+
+        console.log('Path has curves:', hasCurves);
+
+        if (hasCurves && length > 0) {
+            // 对于贝塞尔曲线，使用更密集的采样
+            const numSamples = Math.max(50, Math.min(200, Math.floor(length / 2))); // 50-200个采样点
+            console.log('Using', numSamples, 'samples for curved path');
+            
+            for (let i = 0; i <= numSamples; i++) {
+                const t = i / numSamples;
+                const offset = t * length;
+                const point = path.getPointAt(offset);
+                if (point) {
+                    points.push({ x: point.x, y: point.y });
+                }
+            }
+        } else {
+            // 对于直线，使用原来的采样方法
+            const step = Math.max(1, length / 100);
+            console.log('Using step size', step, 'for straight path');
+            
+            for (let offset = 0; offset <= length; offset += step) {
+                const point = path.getPointAt(offset);
+                if (point) {
+                    points.push({ x: point.x, y: point.y });
+                }
             }
         }
 
+        console.log('Generated points:', points.length);
+        console.log('First few points:', points.slice(0, 5));
+        console.log('Last few points:', points.slice(-5));
         return points;
     }
 

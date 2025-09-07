@@ -1,10 +1,10 @@
 /**
- * 主应用程序 - 2D机械臂模拟器
+ * 主应用程序 - 3D机械臂模拟器
  */
 class MechanicalArmSimulator {
     constructor() {
         this.drawingCanvas = null;
-        this.printerSimulator = null;
+        this.threeJSWorkArea = null;
         this.isInitialized = false;
         
         // 等待DOM加载完成后初始化
@@ -20,13 +20,19 @@ class MechanicalArmSimulator {
      */
     initialize() {
         try {
-            console.log('Initializing Mechanical Arm Simulator...');
+            console.log('Initializing 3D Mechanical Arm Simulator...');
             
             // 初始化绘图画布
             this.drawingCanvas = new DrawingCanvas('drawingCanvas');
             
-            // 初始化打印机模拟器
-            this.printerSimulator = new PrinterSimulator('simulationCanvas');
+            // 初始化3D工作区域
+            this.threeJSWorkArea = new ThreeJSWorkArea('threejsCanvas');
+            
+            // 设置模拟完成回调
+            this.threeJSWorkArea.onSimulationComplete = () => {
+                console.log('App: Simulation completed, updating button state');
+                this.onSimulationComplete();
+            };
             
             // 绑定UI事件
             this.bindUIEvents();
@@ -53,8 +59,6 @@ class MechanicalArmSimulator {
         // 头部控制按钮事件
         this.bindHeaderControls();
         
-        // 平滑滑块事件
-        this.bindSmoothingControl();
         
         // 窗口调整事件
         this.bindWindowEvents();
@@ -75,6 +79,42 @@ class MechanicalArmSimulator {
                 this.selectTool(tool, e.currentTarget);
             });
         });
+        
+        // 绑定形状选择按钮事件
+        this.bindShapeButtons();
+    }
+
+    /**
+     * 绑定形状选择按钮事件
+     */
+    bindShapeButtons() {
+        const shapeTool = document.getElementById('shapeTool');
+        const shapeSelector = document.getElementById('shapeSelector');
+        const shapeButtons = document.querySelectorAll('.shape-btn[data-shape]');
+        
+        // 形状工具按钮点击事件
+        if (shapeTool) {
+            shapeTool.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleShapeSelector();
+            });
+        }
+        
+        // 形状选择按钮事件
+        shapeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const shapeType = e.currentTarget.dataset.shape;
+                this.selectShape(shapeType, e.currentTarget);
+            });
+        });
+        
+        // 点击其他地方隐藏形状选择器
+        document.addEventListener('click', (e) => {
+            if (shapeSelector && !shapeSelector.contains(e.target) && e.target !== shapeTool) {
+                shapeSelector.classList.add('hidden');
+            }
+        });
     }
 
     /**
@@ -94,25 +134,6 @@ class MechanicalArmSimulator {
         }
     }
 
-    /**
-     * 绑定平滑控制
-     */
-    bindSmoothingControl() {
-        const smoothingSlider = document.getElementById('smoothing');
-        const smoothingValue = document.getElementById('smoothingValue');
-        
-        if (smoothingSlider) {
-            smoothingSlider.addEventListener('input', (e) => {
-                const value = parseInt(e.target.value);
-                this.drawingCanvas.setSmoothingFactor(value);
-                
-                // 更新显示值，当值为0时显示"Off"
-                if (smoothingValue) {
-                    smoothingValue.textContent = value === 0 ? 'Off' : value;
-                }
-            });
-        }
-    }
 
     /**
      * 绑定窗口事件
@@ -159,8 +180,23 @@ class MechanicalArmSimulator {
                 case '3':
                     this.selectTool('bezier');
                     break;
-                case 'e':
-                    this.selectTool('edit');
+                case '4':
+                    this.selectTool('shape');
+                    break;
+                case 'c':
+                    if (this.currentTool === 'shape') {
+                        this.selectShape('circle');
+                    }
+                    break;
+                case 's':
+                    if (this.currentTool === 'shape') {
+                        this.selectShape('star');
+                    }
+                    break;
+                case 'h':
+                    if (this.currentTool === 'shape') {
+                        this.selectShape('heart');
+                    }
                     break;
                 case 'd':
                     this.selectTool('delete');
@@ -207,18 +243,80 @@ class MechanicalArmSimulator {
     }
 
     /**
+     * 切换形状选择器显示状态
+     */
+    toggleShapeSelector() {
+        const shapeSelector = document.getElementById('shapeSelector');
+        if (shapeSelector) {
+            shapeSelector.classList.toggle('hidden');
+        }
+    }
+
+    /**
+     * 选择形状
+     */
+    selectShape(shapeType, buttonElement = null) {
+        if (!this.drawingCanvas) return;
+        
+        // 设置绘图画布的当前形状
+        this.drawingCanvas.setCurrentShape(shapeType);
+        
+        // 确保选择了形状工具
+        this.selectTool('shape');
+        
+        // 更新形状按钮状态
+        document.querySelectorAll('.shape-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        if (buttonElement) {
+            buttonElement.classList.add('active');
+        } else {
+            const shapeButton = document.querySelector(`[data-shape="${shapeType}"]`);
+            if (shapeButton) {
+                shapeButton.classList.add('active');
+            }
+        }
+        
+        // 隐藏形状选择器
+        const shapeSelector = document.getElementById('shapeSelector');
+        if (shapeSelector) {
+            shapeSelector.classList.add('hidden');
+        }
+        
+        // 显示形状提示
+        this.showShapeTip(shapeType);
+    }
+
+    /**
      * 显示工具提示
      */
     showToolTip(toolName) {
         const tips = {
-            freehand: 'Click and drag to draw freehand lines',
+            freehand: 'Click and drag to draw freehand lines. Control points will appear automatically after drawing.',
             line: 'Click to add points, Enter to finish, Escape to cancel',
             bezier: 'Click 4 points to create a Bezier curve',
-            edit: 'Click on paths to select and edit control points',
+            shape: 'Click to select a preset shape, then click on canvas to place it',
             delete: 'Click on paths to delete them'
         };
         
         const tip = tips[toolName];
+        if (tip) {
+            this.showNotification(tip, 'info', 3000);
+        }
+    }
+
+    /**
+     * 显示形状提示
+     */
+    showShapeTip(shapeType) {
+        const tips = {
+            circle: 'Click anywhere on the canvas to place a circle',
+            star: 'Click anywhere on the canvas to place a 5-pointed star',
+            heart: 'Click anywhere on the canvas to place a heart shape'
+        };
+        
+        const tip = tips[shapeType];
         if (tip) {
             this.showNotification(tip, 'info', 3000);
         }
@@ -243,9 +341,9 @@ class MechanicalArmSimulator {
         }
         
         // 停止并重置模拟
-        if (this.printerSimulator) {
-            this.printerSimulator.stopSimulation();
-            this.printerSimulator.setPaths([]);
+        if (this.threeJSWorkArea) {
+            this.threeJSWorkArea.stopSimulation();
+            this.threeJSWorkArea.setPaths([]);
         }
         
         // 重置模拟按钮
@@ -258,16 +356,26 @@ class MechanicalArmSimulator {
      * 切换模拟状态
      */
     toggleSimulation() {
-        if (!this.isInitialized || !this.printerSimulator) return;
+        if (!this.isInitialized || !this.threeJSWorkArea) return;
         
-        if (this.printerSimulator.isSimulating) {
-            if (this.printerSimulator.isPaused) {
+        // 检查当前按钮状态
+        const simulateButton = document.getElementById('simulate');
+        const buttonText = simulateButton ? simulateButton.textContent.trim() : '';
+        
+        // 如果是完成状态，重新开始模拟
+        if (buttonText === 'Completed') {
+            this.startSimulation();
+            return;
+        }
+        
+        if (this.threeJSWorkArea.isSimulating) {
+            if (this.threeJSWorkArea.isPaused) {
                 // 继续模拟
-                this.printerSimulator.pauseSimulation();
+                this.threeJSWorkArea.pauseSimulation();
                 this.updateSimulateButton('pause');
             } else {
                 // 暂停模拟
-                this.printerSimulator.pauseSimulation();
+                this.threeJSWorkArea.pauseSimulation();
                 this.updateSimulateButton('resume');
             }
         } else {
@@ -280,7 +388,7 @@ class MechanicalArmSimulator {
      * 开始模拟
      */
     startSimulation() {
-        if (!this.drawingCanvas || !this.printerSimulator) return;
+        if (!this.drawingCanvas || !this.threeJSWorkArea) return;
         
         // 获取所有路径
         const paths = this.drawingCanvas.getAllPaths();
@@ -290,11 +398,11 @@ class MechanicalArmSimulator {
             return;
         }
         
-        // 设置路径数据到模拟器
-        this.printerSimulator.setPaths(paths);
+        // 设置路径数据到3D工作区域
+        this.threeJSWorkArea.setPaths(paths);
         
         // 开始模拟
-        this.printerSimulator.startSimulation();
+        this.threeJSWorkArea.startSimulation();
         
         // 更新按钮状态
         this.updateSimulateButton('pause');
@@ -306,11 +414,20 @@ class MechanicalArmSimulator {
      * 停止模拟
      */
     stopSimulation() {
-        if (this.printerSimulator) {
-            this.printerSimulator.stopSimulation();
+        if (this.threeJSWorkArea) {
+            this.threeJSWorkArea.stopSimulation();
             this.updateSimulateButton('simulate');
             this.showNotification('Simulation stopped', 'info', 2000);
         }
+    }
+
+    /**
+     * 模拟完成回调
+     */
+    onSimulationComplete() {
+        console.log('App: Setting button to completed state');
+        this.updateSimulateButton('completed');
+        this.showNotification('Simulation completed successfully!', 'success', 3000);
     }
 
     /**
@@ -318,13 +435,17 @@ class MechanicalArmSimulator {
      */
     updateSimulateButton(state) {
         const simulateButton = document.getElementById('simulate');
-        if (!simulateButton) return;
+        if (!simulateButton) {
+            console.log('App: simulate button not found!');
+            return;
+        }
         
         const states = {
             simulate: { text: 'Simulate', icon: 'fa-play', class: 'btn-primary' },
             pause: { text: 'Pause', icon: 'fa-pause', class: 'btn-warning' },
             resume: { text: 'Resume', icon: 'fa-play', class: 'btn-success' },
-            stop: { text: 'Stop', icon: 'fa-stop', class: 'btn-danger' }
+            stop: { text: 'Stop', icon: 'fa-stop', class: 'btn-danger' },
+            completed: { text: 'Completed', icon: 'fa-check', class: 'btn-success' }
         };
         
         const config = states[state] || states.simulate;
@@ -334,6 +455,13 @@ class MechanicalArmSimulator {
         
         // 更新按钮样式
         simulateButton.className = `btn ${config.class}`;
+        
+        // 强制重绘
+        simulateButton.style.display = 'none';
+        simulateButton.offsetHeight; // 触发重排
+        simulateButton.style.display = '';
+        
+        console.log(`App: Button updated to "${config.text}" with class "${config.class}"`);
     }
 
     /**
@@ -343,22 +471,19 @@ class MechanicalArmSimulator {
         // 选择默认工具
         this.selectTool('freehand');
         
-        // 设置默认平滑值
-        const smoothingSlider = document.getElementById('smoothing');
-        const smoothingValue = document.getElementById('smoothingValue');
-        if (smoothingSlider) {
-            const value = parseInt(smoothingSlider.value);
-            this.drawingCanvas.setSmoothingFactor(value);
-            
-            // 更新显示值
-            if (smoothingValue) {
-                smoothingValue.textContent = value === 0 ? 'Off' : value;
-            }
+        // 设置默认形状并激活第一个形状按钮
+        this.drawingCanvas.setCurrentShape('circle');
+        const firstShapeButton = document.querySelector('.shape-btn[data-shape="circle"]');
+        if (firstShapeButton) {
+            firstShapeButton.classList.add('active');
         }
+        
+        // 设置固定的平滑预设值 (35%)
+        this.drawingCanvas.setSmoothingFactor(35);
         
         // 显示欢迎信息
         setTimeout(() => {
-            this.showNotification('Welcome! Start drawing paths on the left panel.', 'info', 5000);
+            this.showNotification('Welcome! Start drawing paths on the left panel. Press 4 to access preset shapes.', 'info', 5000);
         }, 1000);
     }
 
@@ -451,8 +576,8 @@ class MechanicalArmSimulator {
             // Paper.js会自动清理
         }
         
-        if (this.printerSimulator) {
-            this.printerSimulator.destroy();
+        if (this.threeJSWorkArea) {
+            this.threeJSWorkArea.destroy();
         }
         
         // 移除事件监听器
