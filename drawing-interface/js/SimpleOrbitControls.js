@@ -31,6 +31,10 @@ class SimpleOrbitControls {
         this.STATE = { NONE: -1, ROTATE: 0, ZOOM: 1 };
         this.state = this.STATE.NONE;
         
+        // 绑定方法到this上下文，确保事件监听器可以正确移除
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
+        
         // 绑定事件
         this.bindEvents();
         
@@ -53,17 +57,18 @@ class SimpleOrbitControls {
             this.rotateStart.set(event.clientX, event.clientY);
             this.state = this.STATE.ROTATE;
             
-            document.addEventListener('mousemove', this.onMouseMove.bind(this));
-            document.addEventListener('mouseup', this.onMouseUp.bind(this));
+            document.addEventListener('mousemove', this.onMouseMove);
+            document.addEventListener('mouseup', this.onMouseUp);
         }
     }
     
     onMouseMove(event) {
         if (!this.enabled) return;
         
-        event.preventDefault();
-        
         if (this.state === this.STATE.ROTATE) {
+            // 只在旋转状态下阻止默认行为
+            event.preventDefault();
+            
             this.rotateEnd.set(event.clientX, event.clientY);
             this.rotateDelta.subVectors(this.rotateEnd, this.rotateStart).multiplyScalar(this.rotateSpeed);
             
@@ -84,8 +89,8 @@ class SimpleOrbitControls {
     onMouseUp(event) {
         if (!this.enabled) return;
         
-        document.removeEventListener('mousemove', this.onMouseMove.bind(this));
-        document.removeEventListener('mouseup', this.onMouseUp.bind(this));
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mouseup', this.onMouseUp);
         
         this.state = this.STATE.NONE;
     }
@@ -144,8 +149,12 @@ class SimpleOrbitControls {
         this.domElement.removeEventListener('wheel', this.onMouseWheel);
         this.domElement.removeEventListener('contextmenu', () => {});
         
+        // 确保清理全局事件监听器
         document.removeEventListener('mousemove', this.onMouseMove);
         document.removeEventListener('mouseup', this.onMouseUp);
+        
+        // 重置状态
+        this.state = this.STATE.NONE;
     }
 }
 

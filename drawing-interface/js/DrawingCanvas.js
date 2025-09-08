@@ -4,11 +4,18 @@
 class DrawingCanvas {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
+        console.log('DrawingCanvas constructor - canvas element:', this.canvas);
+        
+        if (!this.canvas) {
+            throw new Error(`Canvas element with ID "${canvasId}" not found`);
+        }
+        
         this.pathProcessor = new PathProcessor();
         this.shapeLibrary = new ShapeLibrary();
         
         // 初始化Paper.js
         paper.setup(this.canvas);
+        console.log('Paper.js setup completed');
         
         // 工具状态
         this.currentTool = 'freehand';
@@ -38,6 +45,12 @@ class DrawingCanvas {
         
         // 绘制网格
         this.drawGrid();
+        
+        // 延迟调整画布大小，确保容器已经正确渲染
+        setTimeout(() => {
+            this.resize();
+            console.log('Canvas resized. New size:', this.canvas.width, 'x', this.canvas.height);
+        }, 100);
     }
 
     /**
@@ -94,6 +107,8 @@ class DrawingCanvas {
      * 鼠标按下事件
      */
     handleMouseDown(event) {
+        console.log('Mouse down event:', event.point, 'Current tool:', this.currentTool);
+        
         // 首先检查是否点击了控制点（支持拖拽编辑）
         const hitResult = paper.project.hitTest(event.point, {
             segments: true,
@@ -922,6 +937,7 @@ class DrawingCanvas {
             case 'line':
             case 'bezier':
             case 'shape':
+            case 'image-trace':
                 this.canvas.style.cursor = 'pointer';
                 break;
             case 'delete':

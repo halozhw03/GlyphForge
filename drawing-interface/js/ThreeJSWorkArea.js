@@ -677,6 +677,15 @@ class ThreeJSWorkArea {
                 speedValue.textContent = this.printSpeed;
                 this.updateEstimatedTime();
             });
+            
+            // 防止滑块事件被3D控制器干扰
+            speedSlider.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+            
+            speedSlider.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+            });
         }
         
         if (workWidthInput) {
