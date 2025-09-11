@@ -662,25 +662,38 @@ class DrawingCanvas {
      */
     finishControlPointDrag() {
         if (!this.dragTarget || !this.dragTarget.data) return;
-        
+
         const { parentPath } = this.dragTarget.data;
-        
+
         // 更新路径数据
         if (parentPath.data) {
-            // 重新生成点数组
-            const newPoints = [];
-            parentPath.segments.forEach(segment => {
-                newPoints.push({ x: segment.point.x, y: segment.point.y });
-            });
-            
+            // 检查是否是贝塞尔曲线路径（有控制点）
+            const hasCurves = parentPath.segments && parentPath.segments.some(seg =>
+                (seg.handleIn && (seg.handleIn.x !== 0 || seg.handleIn.y !== 0)) ||
+                (seg.handleOut && (seg.handleOut.x !== 0 || seg.handleOut.y !== 0))
+            );
+
+            let newPoints;
+            if (hasCurves) {
+                // 对于贝塞尔曲线，使用路径处理器重新采样
+                console.log('DrawingCanvas: Re-sampling Bezier curve after edit');
+                newPoints = this.pathProcessor.paperPathToPoints(parentPath);
+            } else {
+                // 对于直线路径，直接使用segment点
+                newPoints = [];
+                parentPath.segments.forEach(segment => {
+                    newPoints.push({ x: segment.point.x, y: segment.point.y });
+                });
+            }
+
             // 更新存储的路径数据
             parentPath.data.points = newPoints;
             parentPath.data.length = this.pathProcessor.calculatePathLength(newPoints);
-            
+
             // 更新路径信息显示
             this.updatePathInfo();
         }
-        
+
         this.isDragging = false;
         this.dragTarget = null;
     }
