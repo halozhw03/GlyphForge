@@ -4,9 +4,12 @@
 class MechanicalArmSimulator {
     constructor() {
         this.drawingCanvas = null;
+        this.workspaceCanvas = null;
         this.threeJSWorkArea = null;
+        this.robotGripper = null;
         this.imageTracer = null;
         this.currentTool = 'freehand';
+        this.currentMode = 'drawing'; // 'drawing' or 'robot'
         this.isInitialized = false;
         
         // 等待DOM加载完成后初始化
@@ -41,8 +44,16 @@ class MechanicalArmSimulator {
             this.drawingCanvas = new DrawingCanvas('drawingCanvas');
             console.log('DrawingCanvas initialized:', this.drawingCanvas);
             
+            // 初始化工作空间画布（机器人模式）
+            this.workspaceCanvas = new WorkspaceCanvas('workspaceCanvas');
+            console.log('WorkspaceCanvas initialized:', this.workspaceCanvas);
+            
             // 初始化3D工作区域
             this.threeJSWorkArea = new ThreeJSWorkArea('threejsCanvas');
+            
+            // 初始化机器人抓手
+            this.robotGripper = new RobotGripper(this.threeJSWorkArea);
+            console.log('RobotGripper initialized:', this.robotGripper);
             
             // 初始化图片追踪器
             this.imageTracer = new ImageTracer();
@@ -55,6 +66,9 @@ class MechanicalArmSimulator {
             
             // 绑定UI事件
             this.bindUIEvents();
+            
+            // 绑定工作空间事件
+            this.bindWorkspaceEvents();
             
             // 设置默认状态
             this.setupDefaultState();
@@ -77,6 +91,12 @@ class MechanicalArmSimulator {
         
         // 头部控制按钮事件
         this.bindHeaderControls();
+        
+        // 模式切换事件
+        this.bindModeToggle();
+        
+        // 物品库事件
+        this.bindObjectLibrary();
         
         // 图片上传事件
         this.bindImageUpload();
@@ -139,6 +159,43 @@ class MechanicalArmSimulator {
     }
 
     /**
+     * 绑定物品形状选择按钮事件
+     */
+    bindObjectShapeButtons() {
+        const selectObjectTool = document.getElementById('selectObjectTool');
+        const objectShapeSelector = document.getElementById('objectShapeSelector');
+        const objectShapeButtons = document.querySelectorAll('.object-shape-btn[data-object]');
+        
+        // 物品选择工具按钮点击事件
+        if (selectObjectTool) {
+            selectObjectTool.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 确保当前工具为放置物品
+                this.selectRobotTool('place-object');
+                this.toggleObjectShapeSelector();
+            });
+        }
+        
+        // 物品形状选择按钮事件
+        objectShapeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const objectType = e.currentTarget.dataset.object;
+                this.selectObjectShape(objectType, e.currentTarget);
+                // 选择形状后，自动切回放置工具
+                this.selectRobotTool('place-object');
+            });
+        });
+        
+        // 点击其他地方隐藏物品形状选择器
+        document.addEventListener('click', (e) => {
+            if (objectShapeSelector && !objectShapeSelector.contains(e.target) && e.target !== selectObjectTool) {
+                objectShapeSelector.classList.add('hidden');
+            }
+        });
+    }
+
+    /**
      * 绑定图片上传事件
      */
     bindImageUpload() {
@@ -183,6 +240,79 @@ class MechanicalArmSimulator {
         } else {
             console.error('Simulate button not found!');
         }
+    }
+
+    /**
+     * 绑定模式切换事件
+     */
+    bindModeToggle() {
+        const modeToggleButton = document.getElementById('modeToggle');
+        if (modeToggleButton) {
+            modeToggleButton.addEventListener('click', () => {
+                this.toggleMode();
+            });
+        }
+    }
+
+    /**
+     * 绑定物品库事件
+     */
+    bindObjectLibrary() {
+        // 绑定机器人模式工具按钮
+        const robotToolButtons = document.querySelectorAll('#robotModePanel .tool-btn[data-tool]');
+        robotToolButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tool = e.currentTarget.dataset.tool;
+                this.selectRobotTool(tool, e.currentTarget);
+            });
+        });
+        
+        // 绑定物品选择按钮事件
+        this.bindObjectShapeButtons();
+    }
+
+    /**
+     * 绑定工作空间事件
+     */
+    bindWorkspaceEvents() {
+        // 监听工作空间画布事件
+        document.addEventListener('workspaceCanvas:objectPlaced', (e) => {
+            console.log('Object placed:', e.detail);
+        });
+
+        document.addEventListener('workspaceCanvas:targetSet', (e) => {
+            console.log('Target set:', e.detail);
+        });
+
+        document.addEventListener('workspaceCanvas:objectDeleted', (e) => {
+            console.log('Object deleted:', e.detail);
+        });
+
+        // 监听工具切换事件
+        document.addEventListener('workspaceCanvas:toolChanged', (e) => {
+            console.log('Tool changed:', e.detail);
+            this.updateRobotToolButtons(e.detail.tool);
+        });
+    }
+
+    /**
+     * 更新机器人工具按钮状态
+     */
+    updateRobotToolButtons(toolName) {
+        // 更新工具按钮状态
+        document.querySelectorAll('#robotModePanel .tool-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        const toolButton = document.querySelector(`#robotModePanel [data-tool="${toolName}"]`);
+        if (toolButton) {
+            toolButton.classList.add('active');
+        }
+        
+        // 更新当前工具状态
+        this.currentTool = toolName;
+        
+        console.log('Robot tool buttons updated for:', toolName);
     }
 
 
@@ -481,6 +611,137 @@ class MechanicalArmSimulator {
     }
 
     /**
+     * 切换模式
+     */
+    toggleMode() {
+        if (this.currentMode === 'drawing') {
+            this.switchToRobotMode();
+        } else {
+            this.switchToDrawingMode();
+        }
+    }
+
+    /**
+     * 切换到机器人模式
+     */
+    switchToRobotMode() {
+        this.currentMode = 'robot';
+        
+        // 更新标题
+        const headerTitle = document.getElementById('headerTitle');
+        if (headerTitle) {
+            headerTitle.textContent = 'Robot Gripper Simulator';
+        }
+        
+        // 更新模式切换按钮
+        const modeToggleButton = document.getElementById('modeToggle');
+        if (modeToggleButton) {
+            modeToggleButton.innerHTML = '<i class="fas fa-pencil-alt"></i> Drawing Mode';
+            modeToggleButton.classList.add('robot-mode');
+        }
+        
+        // 隐藏绘画面板，显示机器人面板
+        const drawingPanel = document.getElementById('drawingModePanel');
+        const robotPanel = document.getElementById('robotModePanel');
+        
+        if (drawingPanel) drawingPanel.classList.add('hidden');
+        if (robotPanel) robotPanel.classList.remove('hidden');
+        
+        // 启用机器人模式
+        if (this.robotGripper) {
+            this.robotGripper.enableRobotMode();
+        }
+        
+        // 设置默认机器人工具
+        this.selectRobotTool('place-object');
+        
+        this.showNotification('Switched to Robot Mode', 'info', 2000);
+        console.log('Switched to robot mode');
+    }
+
+    /**
+     * 切换到绘画模式
+     */
+    switchToDrawingMode() {
+        this.currentMode = 'drawing';
+        
+        // 更新标题
+        const headerTitle = document.getElementById('headerTitle');
+        if (headerTitle) {
+            headerTitle.textContent = '3D Mechanical Arm Simulator';
+        }
+        
+        // 更新模式切换按钮
+        const modeToggleButton = document.getElementById('modeToggle');
+        if (modeToggleButton) {
+            modeToggleButton.innerHTML = '<i class="fas fa-robot"></i> Robot Mode';
+            modeToggleButton.classList.remove('robot-mode');
+        }
+        
+        // 显示绘画面板，隐藏机器人面板
+        const drawingPanel = document.getElementById('drawingModePanel');
+        const robotPanel = document.getElementById('robotModePanel');
+        
+        if (drawingPanel) drawingPanel.classList.remove('hidden');
+        if (robotPanel) robotPanel.classList.add('hidden');
+        
+        // 禁用机器人模式
+        if (this.robotGripper) {
+            this.robotGripper.disableRobotMode();
+        }
+        
+        this.showNotification('Switched to Drawing Mode', 'info', 2000);
+        console.log('Switched to drawing mode');
+    }
+
+    /**
+     * 选择机器人工具
+     */
+    selectRobotTool(toolName, buttonElement = null) {
+        if (!this.workspaceCanvas) return;
+        
+        // 更新工具按钮状态
+        document.querySelectorAll('#robotModePanel .tool-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        if (buttonElement) {
+            buttonElement.classList.add('active');
+        } else {
+            const toolButton = document.querySelector(`#robotModePanel [data-tool="${toolName}"]`);
+            if (toolButton) {
+                toolButton.classList.add('active');
+            }
+        }
+        
+        // 设置工作空间画布工具
+        this.workspaceCanvas.setTool(toolName);
+        
+        // 更新当前工具状态
+        this.currentTool = toolName;
+        
+        // 显示工具提示
+        this.showRobotToolTip(toolName);
+    }
+
+
+    /**
+     * 显示机器人工具提示
+     */
+    showRobotToolTip(toolName) {
+        const tips = {
+            'place-object': 'Click to place selected object on the workspace',
+            'set-target': 'Click to set target position for objects',
+            'delete-object': 'Click on objects to delete them'
+        };
+        
+        const tip = tips[toolName];
+        if (tip) {
+            this.showNotification(tip, 'info', 3000);
+        }
+    }
+
+    /**
      * 显示工具提示
      */
     showToolTip(toolName) {
@@ -516,12 +777,77 @@ class MechanicalArmSimulator {
     }
 
     /**
+     * 切换物品形状选择器显示状态
+     */
+    toggleObjectShapeSelector() {
+        const objectShapeSelector = document.getElementById('objectShapeSelector');
+        if (objectShapeSelector) {
+            objectShapeSelector.classList.toggle('hidden');
+        }
+    }
+
+    /**
+     * 选择物品形状
+     */
+    selectObjectShape(objectType, buttonElement = null) {
+        console.log('selectObjectShape called with:', objectType);
+        console.log('workspaceCanvas available:', !!this.workspaceCanvas);
+        
+        if (!this.workspaceCanvas) return;
+        
+        // 设置工作空间画布的选中物品类型
+        this.workspaceCanvas.setSelectedObjectType(objectType);
+        console.log('Object type set to WorkspaceCanvas:', objectType);
+        
+        // 更新物品形状按钮状态
+        document.querySelectorAll('.object-shape-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        if (buttonElement) {
+            buttonElement.classList.add('active');
+        } else {
+            const objectButton = document.querySelector(`[data-object="${objectType}"]`);
+            if (objectButton) {
+                objectButton.classList.add('active');
+            }
+        }
+        
+        // 隐藏物品形状选择器
+        const objectShapeSelector = document.getElementById('objectShapeSelector');
+        if (objectShapeSelector) {
+            objectShapeSelector.classList.add('hidden');
+        }
+        
+        // 显示物品提示
+        this.showObjectTip(objectType);
+        
+        console.log('Selected object shape completed:', objectType);
+    }
+
+    /**
+     * 显示物品提示
+     */
+    showObjectTip(objectType) {
+        const tips = {
+            cube: 'Selected Cube - Click on the workspace to place cube objects',
+            sphere: 'Selected Sphere - Click on the workspace to place sphere objects',
+            cylinder: 'Selected Cylinder - Click on the workspace to place cylinder objects',
+            box: 'Selected Box - Click on the workspace to place box objects'
+        };
+        
+        const tip = tips[objectType];
+        if (tip) {
+            this.showNotification(tip, 'info', 3000);
+        }
+    }
+
+    /**
      * 清除所有内容
      */
     clearAll() {
         console.log('clearAll called, isInitialized:', this.isInitialized);
-        console.log('drawingCanvas:', this.drawingCanvas);
-        console.log('threeJSWorkArea:', this.threeJSWorkArea);
+        console.log('currentMode:', this.currentMode);
         
         if (!this.isInitialized) {
             console.log('Not initialized, returning');
@@ -529,34 +855,50 @@ class MechanicalArmSimulator {
         }
         
         // 确认对话框
+        const message = this.currentMode === 'robot' ? 
+            'Are you sure you want to clear all objects? This action cannot be undone.' :
+            'Are you sure you want to clear all paths? This action cannot be undone.';
+            
         if (this.hasUnsavedChanges()) {
-            if (!confirm('Are you sure you want to clear all paths? This action cannot be undone.')) {
+            if (!confirm(message)) {
                 console.log('User cancelled clear operation');
                 return;
             }
         }
         
-        // 清除绘图画布
-        if (this.drawingCanvas) {
-            console.log('Clearing drawing canvas');
-            this.drawingCanvas.clearAll();
+        if (this.currentMode === 'robot') {
+            // 清除机器人模式内容
+            if (this.workspaceCanvas) {
+                console.log('Clearing workspace canvas');
+                this.workspaceCanvas.clearAll();
+            }
+            
+            if (this.robotGripper) {
+                console.log('Clearing robot gripper objects');
+                this.robotGripper.clearObjects();
+            }
+            
+            this.showNotification('All objects cleared', 'success', 2000);
         } else {
-            console.error('Drawing canvas not available');
-        }
-        
-        // 停止并重置模拟
-        if (this.threeJSWorkArea) {
-            console.log('Resetting 3D work area');
-            this.threeJSWorkArea.stopSimulation();
-            this.threeJSWorkArea.setPaths([]);
-        } else {
-            console.error('3D work area not available');
+            // 清除绘图模式内容
+            if (this.drawingCanvas) {
+                console.log('Clearing drawing canvas');
+                this.drawingCanvas.clearAll();
+            }
+            
+            // 停止并重置模拟
+            if (this.threeJSWorkArea) {
+                console.log('Resetting 3D work area');
+                this.threeJSWorkArea.stopSimulation();
+                this.threeJSWorkArea.setPaths([]);
+            }
+            
+            this.showNotification('All paths cleared', 'success', 2000);
         }
         
         // 重置模拟按钮
         this.updateSimulateButton('simulate');
         
-        this.showNotification('All paths cleared', 'success', 2000);
         console.log('Clear All completed');
     }
 
@@ -564,7 +906,7 @@ class MechanicalArmSimulator {
      * 切换模拟状态
      */
     toggleSimulation() {
-        if (!this.isInitialized || !this.threeJSWorkArea) return;
+        if (!this.isInitialized) return;
         
         // 检查当前按钮状态
         const simulateButton = document.getElementById('simulate');
@@ -576,19 +918,38 @@ class MechanicalArmSimulator {
             return;
         }
         
-        if (this.threeJSWorkArea.isSimulating) {
-            if (this.threeJSWorkArea.isPaused) {
-                // 继续模拟
-                this.threeJSWorkArea.pauseSimulation();
-                this.updateSimulateButton('pause');
+        if (this.currentMode === 'robot') {
+            // 机器人模式的暂停逻辑
+            if (this.robotGripper && this.robotGripper.isSimulating) {
+                if (this.robotGripper.isPaused) {
+                    // 继续模拟
+                    this.robotGripper.resumeSimulation();
+                    this.updateSimulateButton('pause');
+                } else {
+                    // 暂停模拟
+                    this.robotGripper.pauseSimulation();
+                    this.updateSimulateButton('resume');
+                }
             } else {
-                // 暂停模拟
-                this.threeJSWorkArea.pauseSimulation();
-                this.updateSimulateButton('resume');
+                // 开始模拟
+                this.startSimulation();
             }
         } else {
-            // 开始模拟
-            this.startSimulation();
+            // 绘画模式的暂停逻辑
+            if (this.threeJSWorkArea && this.threeJSWorkArea.isSimulating) {
+                if (this.threeJSWorkArea.isPaused) {
+                    // 继续模拟
+                    this.threeJSWorkArea.pauseSimulation();
+                    this.updateSimulateButton('pause');
+                } else {
+                    // 暂停模拟
+                    this.threeJSWorkArea.pauseSimulation();
+                    this.updateSimulateButton('resume');
+                }
+            } else {
+                // 开始模拟
+                this.startSimulation();
+            }
         }
     }
 
@@ -596,9 +957,20 @@ class MechanicalArmSimulator {
      * 开始模拟
      */
     startSimulation() {
-        console.log('startSimulation called');
-        console.log('drawingCanvas:', this.drawingCanvas);
-        console.log('threeJSWorkArea:', this.threeJSWorkArea);
+        console.log('startSimulation called, mode:', this.currentMode);
+        
+        if (this.currentMode === 'robot') {
+            return this.startRobotSimulation();
+        } else {
+            return this.startDrawingSimulation();
+        }
+    }
+
+    /**
+     * 开始绘画模拟
+     */
+    startDrawingSimulation() {
+        console.log('Starting drawing simulation');
         
         if (!this.drawingCanvas || !this.threeJSWorkArea) {
             console.error('Required components not available');
@@ -617,7 +989,6 @@ class MechanicalArmSimulator {
         // 验证路径数据结构
         for (let i = 0; i < paths.length; i++) {
             const path = paths[i];
-            console.log(`Path ${i}:`, path);
             if (!path.points || !Array.isArray(path.points)) {
                 console.error(`Invalid path data at index ${i}:`, path);
                 this.showNotification('Invalid path data detected. Please try drawing again.', 'error', 3000);
@@ -627,20 +998,62 @@ class MechanicalArmSimulator {
         
         try {
             // 设置路径数据到3D工作区域
-            console.log('Setting paths to 3D work area...');
             this.threeJSWorkArea.setPaths(paths);
             
             // 开始模拟
-            console.log('Starting simulation...');
             this.threeJSWorkArea.startSimulation();
             
             // 更新按钮状态
             this.updateSimulateButton('pause');
             
-            this.showNotification('Simulation started', 'success', 2000);
+            this.showNotification('Drawing simulation started', 'success', 2000);
         } catch (error) {
-            console.error('Error starting simulation:', error);
+            console.error('Error starting drawing simulation:', error);
             this.showNotification('Failed to start simulation: ' + error.message, 'error', 4000);
+        }
+    }
+
+    /**
+     * 开始机器人模拟
+     */
+    startRobotSimulation() {
+        console.log('Starting robot simulation');
+        
+        if (!this.workspaceCanvas || !this.robotGripper) {
+            console.error('Required robot components not available');
+            return;
+        }
+        
+        // 获取所有物品
+        const objects = this.workspaceCanvas.getAllObjects();
+        console.log('Objects retrieved:', objects);
+        
+        if (objects.length === 0) {
+            this.showNotification('No objects to simulate. Please place objects first.', 'warning', 3000);
+            return;
+        }
+        
+        // 检查是否有目标位置
+        const objectsWithTargets = objects.filter(obj => obj.targetPosition);
+        if (objectsWithTargets.length === 0) {
+            this.showNotification('No target positions set. Please set target positions for objects.', 'warning', 3000);
+            return;
+        }
+        
+        try {
+            // 设置物品数据到机器人抓手
+            this.robotGripper.setObjects(objects);
+            
+            // 开始机器人模拟
+            this.robotGripper.startRobotSimulation();
+            
+            // 更新按钮状态
+            this.updateSimulateButton('pause');
+            
+            this.showNotification(`Robot simulation started for ${objectsWithTargets.length} objects`, 'success', 2000);
+        } catch (error) {
+            console.error('Error starting robot simulation:', error);
+            this.showNotification('Failed to start robot simulation: ' + error.message, 'error', 4000);
         }
     }
 
@@ -715,9 +1128,16 @@ class MechanicalArmSimulator {
         // 设置固定的平滑预设值 (35%)
         this.drawingCanvas.setSmoothingFactor(35);
         
+        // 设置默认物品类型（机器人模式）
+        this.selectObjectShape('cube');
+        const firstObjectButton = document.querySelector('.object-shape-btn[data-object="cube"]');
+        if (firstObjectButton) {
+            firstObjectButton.classList.add('active');
+        }
+        
         // 显示欢迎信息
         setTimeout(() => {
-            this.showNotification('Welcome! Start drawing paths on the left panel. Press 4 for shapes, 5 for image tracing.', 'info', 5000);
+            this.showNotification('Welcome! Switch to Robot Mode to simulate object picking and placing.', 'info', 5000);
         }, 1000);
     }
 
@@ -725,7 +1145,11 @@ class MechanicalArmSimulator {
      * 检查是否有未保存的更改
      */
     hasUnsavedChanges() {
-        return this.drawingCanvas && this.drawingCanvas.paths.length > 0;
+        if (this.currentMode === 'robot') {
+            return this.workspaceCanvas && this.workspaceCanvas.objects.length > 0;
+        } else {
+            return this.drawingCanvas && this.drawingCanvas.paths.length > 0;
+        }
     }
 
     /**

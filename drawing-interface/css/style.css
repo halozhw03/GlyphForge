@@ -105,6 +105,15 @@ body {
     background: #b7791f;
 }
 
+.btn-secondary {
+    background: #718096;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4a5568;
+}
+
 /* Main Content */
 .main-content {
     display: flex;
@@ -492,4 +501,169 @@ body {
     border: 4px solid transparent;
     border-top-color: #2d3748;
     z-index: 1000;
+}
+
+/* Mode Panel Styles */
+.mode-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.mode-panel.hidden {
+    display: none;
+}
+
+/* Object Selector Styles */
+.object-selector-container {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(248, 250, 252, 0.8);
+}
+
+.object-selector-container label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.object-select {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4a5568;
+    cursor: pointer;
+    appearance: none;
+    transition: all 0.2s ease;
+}
+
+.object-select:hover {
+    border-color: #667eea;
+}
+
+.object-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #4a5568;
+    pointer-events: none;
+    font-size: 0.8rem;
+}
+
+/* Object Tools */
+.tool-group.object-tools {
+    gap: 0.5rem;
+}
+
+/* Object Selector Tool Container */
+.object-selector-tool-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Object Shape Selector Styles */
+.object-shape-selector {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    margin-top: 0.25rem;
+}
+
+.object-shape-selector.hidden {
+    display: none;
+}
+
+.object-shape-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.object-shape-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: scale(1.05);
+}
+
+.object-shape-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+/* Workspace Canvas Styles */
+#workspaceCanvas {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    display: block;
+    object-fit: contain;
+}
+
+/* 确保画布容器保持正确比例 */
+.canvas-container {
+    position: relative;
+    aspect-ratio: 4/3; /* 保持4:3的宽高比 */
+    min-height: 300px;
+    max-height: 500px;
+}
+
+.canvas-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Robot Status Indicators */
+.status-ready { color: #38a169; }
+.status-placing { color: #3182ce; }
+.status-setting-target { color: #d69e2e; }
+.status-simulating { color: #9f7aea; }
+.status-completed { color: #38a169; }
+
+/* Mode Toggle Active States */
+.btn-secondary.robot-mode {
+    background: #667eea;
+}
+
+.btn-secondary.robot-mode:hover {
+    background: #5a67d8;
 }

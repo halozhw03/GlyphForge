@@ -20,8 +20,11 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>3D Mechanical Arm Simulator</h1>
+            <h1 id="headerTitle">3D Mechanical Arm Simulator</h1>
             <div class="header-controls">
+                <button id="modeToggle" class="btn btn-secondary">
+                    <i class="fas fa-robot"></i> Robot Mode
+                </button>
                 <button id="clearAll" class="btn btn-danger">
                     <i class="fas fa-trash"></i> Clear All
                 </button>
@@ -33,71 +36,141 @@
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Left Panel - Drawing Area -->
+            <!-- Left Panel - Drawing Area / Object Placement -->
             <div class="left-panel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-pencil-alt"></i> Path Drawing</h3>
-                </div>
-                
-                <!-- Drawing Tools -->
-                <div class="toolbar">
-                    <div class="tool-group drawing-tools">
-                        <button id="freehandTool" class="tool-btn active" data-tool="freehand" title="Freehand Drawing">
-                            <i class="fas fa-pencil-alt"></i>
-                        </button>
-                        <button id="lineTool" class="tool-btn" data-tool="line" title="Polyline Tool">
-                            <i class="fas fa-draw-polygon"></i>
-                        </button>
-                        <button id="bezierTool" class="tool-btn" data-tool="bezier" title="Bezier Curve">
-                            <i class="fas fa-bezier-curve"></i>
-                        </button>
-                        <div class="shape-tool-container">
-                            <button id="shapeTool" class="tool-btn" data-tool="shape" title="Preset Shapes">
-                                <i class="fas fa-shapes"></i>
+                <!-- Drawing Mode Panel -->
+                <div id="drawingModePanel" class="mode-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-pencil-alt"></i> Path Drawing</h3>
+                    </div>
+                    
+                    <!-- Drawing Tools -->
+                    <div class="toolbar">
+                        <div class="tool-group drawing-tools">
+                            <button id="freehandTool" class="tool-btn active" data-tool="freehand" title="Freehand Drawing">
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
-                            <div id="shapeSelector" class="shape-selector hidden">
-                                <button class="shape-btn" data-shape="circle" title="Circle">
-                                    <i class="fas fa-circle"></i>
+                            <button id="lineTool" class="tool-btn" data-tool="line" title="Polyline Tool">
+                                <i class="fas fa-draw-polygon"></i>
+                            </button>
+                            <button id="bezierTool" class="tool-btn" data-tool="bezier" title="Bezier Curve">
+                                <i class="fas fa-bezier-curve"></i>
+                            </button>
+                            <div class="shape-tool-container">
+                                <button id="shapeTool" class="tool-btn" data-tool="shape" title="Preset Shapes">
+                                    <i class="fas fa-shapes"></i>
                                 </button>
-                                <button class="shape-btn" data-shape="star" title="Star">
-                                    <i class="fas fa-star"></i>
+                                <div id="shapeSelector" class="shape-selector hidden">
+                                    <button class="shape-btn" data-shape="circle" title="Circle">
+                                        <i class="fas fa-circle"></i>
+                                    </button>
+                                    <button class="shape-btn" data-shape="star" title="Star">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                    <button class="shape-btn" data-shape="heart" title="Heart">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button id="imageTraceTool" class="tool-btn" data-tool="image-trace" title="Image Trace">
+                                <i class="fas fa-image"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="toolbar-divider"></div>
+                        
+                        <div class="tool-group delete-tools">
+                            <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete Path">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Drawing Canvas -->
+                    <div class="canvas-container">
+                        <canvas id="drawingCanvas" resize></canvas>
+                        <!-- Hidden file input for image upload -->
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    </div>
+
+                    <!-- Path Info -->
+                    <div class="path-info">
+                        <div class="info-item">
+                            <span>Paths: </span>
+                            <span id="pathCount">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span>Total Length: </span>
+                            <span id="totalLength">0 mm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Robot Mode Panel -->
+                <div id="robotModePanel" class="mode-panel hidden">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-robot"></i> Object Placement</h3>
+                    </div>
+                    
+                    <!-- Object Tools -->
+                    <div class="toolbar">
+                        <div class="tool-group object-tools">
+                            <button id="placeObjectTool" class="tool-btn active" data-tool="place-object" title="Place Object">
+                                <i class="fas fa-cube"></i>
+                            </button>
+                            <button id="setTargetTool" class="tool-btn" data-tool="set-target" title="Set Target Position">
+                                <i class="fas fa-bullseye"></i>
+                            </button>
+                            <div class="object-selector-tool-container">
+                                <button id="selectObjectTool" class="tool-btn" title="Select Object Type">
+                                    <i class="fas fa-shapes"></i>
                                 </button>
-                                <button class="shape-btn" data-shape="heart" title="Heart">
-                                    <i class="fas fa-heart"></i>
-                                </button>
+                                <div id="objectShapeSelector" class="object-shape-selector hidden">
+                                    <button class="object-shape-btn" data-object="cube" title="Cube">
+                                        <i class="fas fa-cube"></i>
+                                    </button>
+                                    <button class="object-shape-btn" data-object="sphere" title="Sphere">
+                                        <i class="fas fa-circle"></i>
+                                    </button>
+                                    <button class="object-shape-btn" data-object="cylinder" title="Cylinder">
+                                        <i class="fas fa-circle-notch"></i>
+                                    </button>
+                                    <button class="object-shape-btn" data-object="box" title="Box">
+                                        <i class="fas fa-square"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <button id="imageTraceTool" class="tool-btn" data-tool="image-trace" title="Image Trace">
-                            <i class="fas fa-image"></i>
-                        </button>
+                        
+                        <div class="toolbar-divider"></div>
+                        
+                        <div class="tool-group delete-tools">
+                            <button id="deleteObjectTool" class="tool-btn" data-tool="delete-object" title="Delete Object">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="toolbar-divider"></div>
-                    
-                    <div class="tool-group delete-tools">
-                        <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete Path">
-                            <i class="fas fa-eraser"></i>
-                        </button>
-                    </div>
-                    
-                </div>
 
-                <!-- Drawing Canvas -->
-                <div class="canvas-container">
-                    <canvas id="drawingCanvas" resize></canvas>
-                    <!-- Hidden file input for image upload -->
-                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
-                </div>
 
-                <!-- Path Info -->
-                <div class="path-info">
-                    <div class="info-item">
-                        <span>Paths: </span>
-                        <span id="pathCount">0</span>
+                    <!-- Workspace Canvas -->
+                    <div class="canvas-container">
+                        <canvas id="workspaceCanvas" resize></canvas>
                     </div>
-                    <div class="info-item">
-                        <span>Total Length: </span>
-                        <span id="totalLength">0 mm</span>
+
+                    <!-- Object Info -->
+                    <div class="path-info">
+                        <div class="info-item">
+                            <span>Objects: </span>
+                            <span id="objectCount">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span>Status: </span>
+                            <span id="robotStatus">Ready</span>
+                        </div>
+                        <div class="info-item">
+                            <span>Tool: </span>
+                            <span id="currentToolDisplay">place-object</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -155,6 +228,8 @@
     <script src="js/ShapeLibrary.js"></script>
     <script src="js/ImageTracer.js"></script>
     <script src="js/DrawingCanvas.js"></script>
+    <script src="js/WorkspaceCanvas.js"></script>
+    <script src="js/RobotGripper.js"></script>
     <script src="js/SimpleOrbitControls.js"></script>
     <script src="js/ThreeJSWorkArea.js"></script>
     <script src="js/app.js"></script>

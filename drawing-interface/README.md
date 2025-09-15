@@ -26,7 +26,27 @@ This project transforms a desktop FDM 3D printer into a low-cost 2D mechanical a
 
 ## Usage
 
-### Getting Started
+### Troubleshooting
+
+### Robot Mode Click Issues
+
+If clicking on placed objects in Robot Mode has no response, please check:
+
+1. **Browser Console**: Open browser developer tools (F12) and check the console for error messages
+2. **Tool Status**: Make sure the correct tool is selected (Place Object, Set Target, or Delete Object)
+3. **Fallback System**: The system uses a fallback canvas rendering system. Debug messages will show "Using fallback system: true"
+
+### Debug Information
+
+The system now includes debug logging. When clicking on the canvas, you should see messages like:
+- "Canvas click at: {x, y} tool: delete-object"
+- "Processing click with tool: delete-object"
+- "Calling deleteObjectAtFallback" (if using fallback system)
+- "deleteObjectAtFallback called with point: {x, y}"
+
+If you don't see these messages, the click event is not being handled properly.
+
+## Getting Started
 1. Open `index.html` in a modern web browser (Chrome/Firefox recommended)
 2. Use the drawing tools in the left panel to create paths
 3. Adjust smoothing and other parameters as needed
