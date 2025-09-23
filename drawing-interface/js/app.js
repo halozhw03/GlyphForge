@@ -367,6 +367,9 @@ class MechanicalArmSimulator {
                 case '5':
                     this.selectTool('image-trace');
                     break;
+                case '6':
+                    this.selectTool('dynamic');
+                    break;
                 case 'c':
                     if (this.currentTool === 'shape') {
                         this.selectShape('circle');
@@ -751,6 +754,7 @@ class MechanicalArmSimulator {
             bezier: 'Click 4 points to create a Bezier curve',
             shape: 'Click to select a preset shape, then click on canvas to place it',
             'image-trace': 'Upload an image to automatically trace its outline and convert it to drawable paths',
+            dynamic: 'Dynamic Art Mode: Draw with dramatic size variation! Move VERY SLOWLY for huge dots (up to 20px), move quickly for tiny dots. The slower you move, the bigger and more opaque the dots become.',
             delete: 'Click on paths to delete them'
         };
         

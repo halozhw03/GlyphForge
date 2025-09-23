@@ -294,41 +294,78 @@ class ThreeJSWorkArea {
     setPaths(paths) {
         // 清除现有路径
         this.clearPaths();
-        
+
         // 保存原始路径数据
         this.originalPaths = paths.map(pathData => ({
             points: [...pathData.points], // 深拷贝点数组
             length: pathData.length,
             id: pathData.id
         }));
-        
+
         // 获取左侧画布的实际尺寸
         const drawingCanvas = document.getElementById('drawingCanvas');
         const canvasWidth = drawingCanvas ? drawingCanvas.clientWidth : 400;
         const canvasHeight = drawingCanvas ? drawingCanvas.clientHeight : 400;
-        
+
         // 计算统一的缩放比例，保持形状比例不变
         // 使用较小的缩放比例确保内容完全适配工作区域
         const scaleX = this.workArea.width / canvasWidth;
         const scaleY = this.workArea.height / canvasHeight;
         const uniformScale = Math.min(scaleX, scaleY); // 使用统一缩放比例
-        
+
         console.log(`Canvas size: ${canvasWidth}x${canvasHeight}, Work area: ${this.workArea.width}x${this.workArea.height}`);
         console.log(`Scale factors: X=${scaleX}, Y=${scaleY}, Uniform=${uniformScale}`);
-        
-        this.paths = this.originalPaths.map(pathData => ({
-            points: pathData.points.map(p => ({ 
-                x: (p.x * uniformScale) - this.workArea.width/2,  // 使用统一缩放并居中
-                y: 0,
-                z: (p.y * uniformScale) - this.workArea.height/2  // 使用统一缩放并居中
-            })),
-            length: pathData.length,
-            id: pathData.id
-        }));
-        
+
+        // 边界检查和调整
+        this.paths = this.originalPaths.map(pathData => {
+            // 转换路径点
+            const convertedPoints = pathData.points.map(p => {
+                // 计算转换后的坐标
+                let convertedX = (p.x * uniformScale) - this.workArea.width/2;
+                let convertedZ = (p.y * uniformScale) - this.workArea.height/2;
+
+                // 边界检查和调整
+                const margin = 10; // 10mm 边界余量
+                const maxX = this.workArea.width / 2 - margin;
+                const minX = -this.workArea.width / 2 + margin;
+                const maxZ = this.workArea.height / 2 - margin;
+                const minZ = -this.workArea.height / 2 + margin;
+
+                // 调整X坐标
+                if (convertedX > maxX) {
+                    convertedX = maxX;
+                    console.warn(`Path point X coordinate (${convertedX}) exceeds work area boundary, clamped to ${maxX}`);
+                } else if (convertedX < minX) {
+                    convertedX = minX;
+                    console.warn(`Path point X coordinate (${convertedX}) exceeds work area boundary, clamped to ${minX}`);
+                }
+
+                // 调整Z坐标
+                if (convertedZ > maxZ) {
+                    convertedZ = maxZ;
+                    console.warn(`Path point Z coordinate (${convertedZ}) exceeds work area boundary, clamped to ${maxZ}`);
+                } else if (convertedZ < minZ) {
+                    convertedZ = minZ;
+                    console.warn(`Path point Z coordinate (${convertedZ}) exceeds work area boundary, clamped to ${minZ}`);
+                }
+
+                return {
+                    x: convertedX,
+                    y: 0,
+                    z: convertedZ
+                };
+            });
+
+            return {
+                points: convertedPoints,
+                length: pathData.length,
+                id: pathData.id
+            };
+        });
+
         // 创建路径线条
         this.createPathLines();
-        
+
         this.resetSimulation();
         this.updateEstimatedTime();
     }

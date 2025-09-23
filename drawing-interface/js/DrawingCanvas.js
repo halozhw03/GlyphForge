@@ -40,6 +40,12 @@ class DrawingCanvas {
         this.controlPointColor = '#dc2626';
         this.controlPointSize = 6;
         
+        // 动态绘画模式参数
+        this.dynamicPoints = [];
+        this.lastPoint = null;
+        this.lastTime = 0;
+        this.velocityHistory = [];
+        
         // 绑定事件
         this.bindEvents();
         
@@ -152,6 +158,9 @@ class DrawingCanvas {
             case 'shape':
                 this.handleShapeToolClick(event.point);
                 break;
+            case 'dynamic':
+                this.startDynamicDrawing(event.point);
+                break;
         }
     }
 
@@ -161,6 +170,8 @@ class DrawingCanvas {
     handleMouseDrag(event) {
         if (this.currentTool === 'freehand' && this.isDrawing) {
             this.continueFreehandDrawing(event.point);
+        } else if (this.currentTool === 'dynamic' && this.isDrawing) {
+            this.continueDynamicDrawing(event.point);
         } else if (this.isDragging && this.dragTarget) {
             this.handleControlPointDrag(event.point);
         }
@@ -172,6 +183,8 @@ class DrawingCanvas {
     handleMouseUp(event) {
         if (this.currentTool === 'freehand' && this.isDrawing) {
             this.finishFreehandDrawing();
+        } else if (this.currentTool === 'dynamic' && this.isDrawing) {
+            this.finishDynamicDrawing();
         } else if (this.isDragging) {
             this.finishControlPointDrag();
         }
@@ -202,12 +215,83 @@ class DrawingCanvas {
     }
 
     /**
+     * 检查点是否在有效绘制区域内
+     */
+    isPointInValidArea(point) {
+        const bounds = paper.view.bounds;
+        const margin = 20; // 20像素边界余量
+
+        return point.x >= margin && point.x <= bounds.width - margin &&
+               point.y >= margin && point.y <= bounds.height - margin;
+    }
+
+    /**
+     * 显示边界调整通知
+     */
+    showBoundaryAdjustmentNotice() {
+        // 创建通知元素
+        const notice = document.createElement('div');
+        notice.className = 'boundary-notice';
+        notice.innerHTML = `
+            <div class="boundary-notice-content">
+                <i class="fas fa-info-circle"></i>
+                <span>Path adjusted to safe boundary</span>
+            </div>
+        `;
+
+        // 添加样式
+        Object.assign(notice.style, {
+            position: 'fixed',
+            top: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '8px 16px',
+            backgroundColor: '#fbbf24',
+            color: '#92400e',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: '500',
+            zIndex: '10001',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #f59e0b',
+            transition: 'opacity 0.3s ease, transform 0.3s ease'
+        });
+
+        // 添加到页面
+        document.body.appendChild(notice);
+
+        // 自动移除
+        setTimeout(() => {
+            notice.style.opacity = '0';
+            notice.style.transform = 'translateX(-50%) translateY(-10px)';
+            setTimeout(() => {
+                if (notice.parentNode) {
+                    notice.parentNode.removeChild(notice);
+                }
+            }, 300);
+        }, 2000);
+    }
+
+    /**
      * 开始自由手绘
      */
     startFreehandDrawing(point) {
+        // 检查起始点是否在有效区域内
+        if (!this.isPointInValidArea(point)) {
+            console.warn('Drawing started outside valid area, adjusting to boundary');
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            // 显示边界调整通知
+            this.showBoundaryAdjustmentNotice();
+        }
+
         this.isDrawing = true;
         this.currentPoints = [{ x: point.x, y: point.y }];
-        
+
         this.currentPath = new paper.Path();
         this.currentPath.strokeColor = this.strokeColor;
         this.currentPath.strokeWidth = this.strokeWidth;
@@ -221,7 +305,19 @@ class DrawingCanvas {
      */
     continueFreehandDrawing(point) {
         if (!this.isDrawing || !this.currentPath) return;
-        
+
+        // 检查点是否在有效区域内，如果不在则调整到边界
+        if (!this.isPointInValidArea(point)) {
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            // 显示边界调整通知
+            this.showBoundaryAdjustmentNotice();
+        }
+
         this.currentPoints.push({ x: point.x, y: point.y });
         this.currentPath.lineTo(point);
         paper.view.draw();
@@ -265,15 +361,27 @@ class DrawingCanvas {
      * 处理多段线工具点击
      */
     handleLineToolClick(point) {
+        // 检查点是否在有效区域内
+        if (!this.isPointInValidArea(point)) {
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            // 显示边界调整通知
+            this.showBoundaryAdjustmentNotice();
+        }
+
         this.tempPoints.push({ x: point.x, y: point.y });
-        
+
         if (this.tempPoints.length === 1) {
             // 第一个点，开始绘制
             this.currentPath = new paper.Path();
             this.currentPath.strokeColor = this.strokeColor;
             this.currentPath.strokeWidth = this.strokeWidth;
             this.currentPath.moveTo(point);
-            
+
             // 创建预览线
             this.previewPath = new paper.Path();
             this.previewPath.strokeColor = this.strokeColor;
@@ -285,7 +393,7 @@ class DrawingCanvas {
             this.currentPath.lineTo(point);
             this.previewPath.segments[0].point = point;
         }
-        
+
         paper.view.draw();
     }
 
@@ -305,29 +413,41 @@ class DrawingCanvas {
      * 处理贝塞尔曲线工具点击
      */
     handleBezierToolClick(point) {
+        // 检查点是否在有效区域内
+        if (!this.isPointInValidArea(point)) {
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            // 显示边界调整通知
+            this.showBoundaryAdjustmentNotice();
+        }
+
         this.tempPoints.push({ x: point.x, y: point.y });
-        
+
         if (this.tempPoints.length === 1) {
             // 起始点 - 创建起始点标记
             this.createBezierPointMarker(point, 'start');
-            
+
         } else if (this.tempPoints.length === 2) {
             // 终止点 - 创建终止点标记和连接线
             this.createBezierPointMarker(point, 'end');
             this.createBezierPreviewLine();
-            
+
         } else if (this.tempPoints.length === 3) {
             // 第一个控制点 - 创建控制点标记和控制线
             this.createBezierPointMarker(point, 'control1');
             this.updateBezierControlLines();
-            
+
         } else if (this.tempPoints.length === 4) {
             // 第二个控制点 - 完成贝塞尔曲线
             this.createBezierPointMarker(point, 'control2');
             this.updateBezierControlLines();
             this.createBezierCurve();
         }
-        
+
         paper.view.draw();
     }
 
@@ -552,13 +672,25 @@ class DrawingCanvas {
      * 处理形状工具点击
      */
     handleShapeToolClick(point) {
+        // 检查点击点是否在有效区域内
+        if (!this.isPointInValidArea(point)) {
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            // 显示边界调整通知
+            this.showBoundaryAdjustmentNotice();
+        }
+
         // 获取画布尺寸
         const canvasWidth = this.canvas.clientWidth;
         const canvasHeight = this.canvas.clientHeight;
-        
+
         // 计算合适的大小
         const defaultSize = this.shapeLibrary.getDefaultSize(this.currentShape, canvasWidth, canvasHeight);
-        
+
         // 生成形状路径点
         const shapePoints = this.shapeLibrary.generateShape(
             this.currentShape,
@@ -566,19 +698,19 @@ class DrawingCanvas {
             point.y,
             defaultSize
         );
-        
+
         if (shapePoints && shapePoints.length > 0) {
             // 创建路径
             const shapePath = this.createPathFromPoints(shapePoints);
-            
+
             if (shapePath) {
                 // 自动选择新创建的路径并显示控制点
                 this.selectPath(shapePath);
-                
+
                 console.log(`Shape created: ${this.currentShape} at (${point.x}, ${point.y}) with size ${defaultSize}`);
             }
         }
-        
+
         paper.view.draw();
         this.updatePathInfo();
     }
@@ -790,6 +922,18 @@ class DrawingCanvas {
         this.clearSelection();
         this.selectedPath = path;
         
+        // 检查是否为动态路径组
+        if (path.name === 'dynamicPath') {
+            this.selectDynamicPath(path);
+            return;
+        }
+        
+        // 检查是否为动态路径组的子元素
+        if (path.parent && path.parent.name === 'dynamicPath') {
+            this.selectDynamicPath(path.parent);
+            return;
+        }
+        
         // 高亮选中的路径
         path.strokeColor = '#dc2626';
         path.strokeWidth = this.strokeWidth + 1;
@@ -945,6 +1089,7 @@ class DrawingCanvas {
         // 更新鼠标样式
         switch (toolName) {
             case 'freehand':
+            case 'dynamic':
                 this.canvas.style.cursor = 'crosshair';
                 break;
             case 'line':
@@ -979,7 +1124,47 @@ class DrawingCanvas {
      * 获取所有路径数据
      */
     getAllPaths() {
-        return this.paths.map(pathData => ({
+        // 验证和清理路径数据
+        const validPaths = this.paths.filter(pathData => {
+            if (!pathData.points || !Array.isArray(pathData.points) || pathData.points.length < 2) {
+                console.warn('Invalid path data detected and filtered out:', pathData);
+                return false;
+            }
+
+            // 检查路径点是否在画布边界内
+            const canvasBounds = paper.view.bounds;
+            const margin = 10; // 10像素边界余量
+
+            const validPoints = pathData.points.filter(point => {
+                if (typeof point.x !== 'number' || typeof point.y !== 'number') {
+                    console.warn('Invalid point coordinates:', point);
+                    return false;
+                }
+
+                // 检查点是否在画布边界内（包含余量）
+                if (point.x < -margin || point.x > canvasBounds.width + margin ||
+                    point.y < -margin || point.y > canvasBounds.height + margin) {
+                    console.warn(`Path point (${point.x}, ${point.y}) is outside canvas bounds (${canvasBounds.width}x${canvasBounds.height})`);
+                    return false;
+                }
+
+                return true;
+            });
+
+            // 如果没有有效点，跳过这个路径
+            if (validPoints.length < 2) {
+                console.warn('Path has insufficient valid points after filtering:', pathData.id);
+                return false;
+            }
+
+            // 更新路径数据
+            pathData.points = validPoints;
+            pathData.length = this.pathProcessor.calculatePathLength(validPoints);
+
+            return true;
+        });
+
+        return validPaths.map(pathData => ({
             points: pathData.points,
             length: pathData.length,
             id: pathData.id
@@ -1036,6 +1221,16 @@ class DrawingCanvas {
             return false;
         }
         
+        // 检查动态路径组
+        if (item.name === 'dynamicPath') {
+            return item.data && item.data.id;
+        }
+        
+        // 检查动态路径组的子元素
+        if (item.parent && item.parent.name === 'dynamicPath') {
+            return item.parent.data && item.parent.data.id;
+        }
+        
         // 检查是否有路径数据（用户绘制的路径都会有data属性）
         return item.data && item.data.id;
     }
@@ -1060,5 +1255,226 @@ class DrawingCanvas {
     resize() {
         paper.view.viewSize = new paper.Size(this.canvas.clientWidth, this.canvas.clientHeight);
         paper.view.draw();
+    }
+
+    /**
+     * 开始动态绘画
+     */
+    startDynamicDrawing(point) {
+        // 检查起始点是否在有效区域内
+        if (!this.isPointInValidArea(point)) {
+            console.warn('Dynamic drawing started outside valid area, adjusting to boundary');
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            this.showBoundaryAdjustmentNotice();
+        }
+
+        this.isDrawing = true;
+        this.dynamicPoints = [];
+        this.lastPoint = { x: point.x, y: point.y };
+        this.lastTime = Date.now();
+        this.velocityHistory = [];
+
+        // 创建动态绘画组
+        this.dynamicGroup = new paper.Group();
+        this.dynamicGroup.name = 'dynamicPath';
+
+        // 添加第一个点（较大的初始点）
+        this.addDynamicPoint(point, 6.0, 0.9);
+    }
+
+    /**
+     * 继续动态绘画
+     */
+    continueDynamicDrawing(point) {
+        if (!this.isDrawing || !this.lastPoint) return;
+
+        // 检查点是否在有效区域内
+        if (!this.isPointInValidArea(point)) {
+            const bounds = paper.view.bounds;
+            const margin = 20;
+
+            point.x = Math.max(margin, Math.min(bounds.width - margin, point.x));
+            point.y = Math.max(margin, Math.min(bounds.height - margin, point.y));
+
+            this.showBoundaryAdjustmentNotice();
+        }
+
+        const currentTime = Date.now();
+        const deltaTime = currentTime - this.lastTime;
+        
+        // 避免除零错误
+        if (deltaTime === 0) return;
+
+        // 计算移动距离和速度
+        const distance = Math.sqrt(
+            Math.pow(point.x - this.lastPoint.x, 2) + 
+            Math.pow(point.y - this.lastPoint.y, 2)
+        );
+        
+        // 如果距离太小，跳过这个点以避免过密的点
+        if (distance < 2) return;
+        
+        const velocity = distance / Math.max(deltaTime, 1); // 像素/毫秒
+        
+        // 更新速度历史（保留最近10个值用于平滑）
+        this.velocityHistory.push(velocity);
+        if (this.velocityHistory.length > 10) {
+            this.velocityHistory.shift();
+        }
+
+        // 计算平均速度
+        const avgVelocity = this.velocityHistory.reduce((sum, v) => sum + v, 0) / this.velocityHistory.length;
+
+        // 根据速度计算点的大小和透明度
+        // 速度越快，点越小越透明；速度越慢，点越大越不透明
+        const maxVelocity = 1.0; // 进一步降低阈值，让慢速移动更容易触发大点
+        const normalizedVelocity = Math.min(avgVelocity / maxVelocity, 1.0);
+        
+        // 使用非线性映射让大小变化更明显
+        const velocityFactor = Math.pow(normalizedVelocity, 0.7); // 使用幂函数让慢速时的变化更明显
+        
+        // 大小：速度快时小(0.8)，速度慢时大(15.0) - 进一步扩大范围
+        const size = 15.0 - (velocityFactor * 14.2);
+        
+        // 透明度：速度快时透明(0.3)，速度慢时不透明(1.0)
+        const opacity = 1.0 - (velocityFactor * 0.7);
+        
+        // 添加调试信息（可选）
+        if (Math.random() < 0.01) { // 偶尔打印调试信息
+            console.log(`Speed: ${avgVelocity.toFixed(2)}, Size: ${size.toFixed(1)}, Opacity: ${opacity.toFixed(2)}`);
+        }
+
+        // 添加一些随机变化来增加艺术效果
+        const randomFactor = 0.4; // 增加随机变化
+        const randomSize = size * (1 + (Math.random() - 0.5) * randomFactor);
+        const randomOpacity = opacity * (1 + (Math.random() - 0.5) * randomFactor * 0.3);
+
+        // 确保值在合理范围内
+        const finalSize = Math.max(0.8, Math.min(20.0, randomSize)); // 进一步扩大尺寸范围
+        const finalOpacity = Math.max(0.2, Math.min(1.0, randomOpacity));
+
+        // 添加点到画布
+        this.addDynamicPoint(point, finalSize, finalOpacity);
+
+        // 更新历史数据
+        this.lastPoint = { x: point.x, y: point.y };
+        this.lastTime = currentTime;
+
+        paper.view.draw();
+    }
+
+    /**
+     * 添加动态点到画布
+     */
+    addDynamicPoint(point, size, opacity) {
+        // 创建圆形点
+        const circle = new paper.Path.Circle({
+            center: new paper.Point(point.x, point.y),
+            radius: size,
+            fillColor: this.strokeColor,
+            opacity: opacity
+        });
+
+        // 添加到动态组
+        if (this.dynamicGroup) {
+            this.dynamicGroup.addChild(circle);
+        }
+
+        // 记录点数据
+        this.dynamicPoints.push({
+            x: point.x,
+            y: point.y,
+            size: size,
+            opacity: opacity
+        });
+    }
+
+    /**
+     * 完成动态绘画
+     */
+    finishDynamicDrawing() {
+        if (!this.isDrawing || !this.dynamicGroup) return;
+        
+        this.isDrawing = false;
+
+        // 如果点数太少，不创建路径
+        if (this.dynamicPoints.length < 2) {
+            if (this.dynamicGroup) {
+                this.dynamicGroup.remove();
+            }
+            this.resetDynamicDrawing();
+            return;
+        }
+
+        // 创建路径数据
+        const pathPoints = this.dynamicPoints.map(p => ({ x: p.x, y: p.y }));
+        const pathData = {
+            path: this.dynamicGroup,
+            points: pathPoints,
+            length: this.pathProcessor.calculatePathLength(pathPoints),
+            id: this.generatePathId(),
+            isDynamic: true // 标记为动态路径
+        };
+        
+        this.paths.push(pathData);
+        this.dynamicGroup.data = pathData;
+        
+        // 自动选择新创建的路径
+        this.selectDynamicPath(this.dynamicGroup);
+        
+        this.resetDynamicDrawing();
+        this.updatePathInfo();
+    }
+
+    /**
+     * 选择动态路径（显示特殊的控制点）
+     */
+    selectDynamicPath(group) {
+        this.clearSelection();
+        this.selectedPath = group;
+        
+        // 高亮选中的路径组
+        group.children.forEach(child => {
+            if (child.fillColor) {
+                child.strokeColor = '#dc2626';
+                child.strokeWidth = 1;
+            }
+        });
+        
+        // 为动态路径显示简化的控制点（每隔几个点显示一个）
+        const step = Math.max(1, Math.floor(this.dynamicPoints.length / 20)); // 最多显示20个控制点
+        for (let i = 0; i < this.dynamicPoints.length; i += step) {
+            const point = this.dynamicPoints[i];
+            const controlPoint = new paper.Path.Circle({
+                center: new paper.Point(point.x, point.y),
+                radius: this.controlPointSize,
+                fillColor: this.controlPointColor,
+                strokeColor: 'white',
+                strokeWidth: 2
+            });
+            
+            controlPoint.name = 'controlPoint';
+            controlPoint.data = { segmentIndex: i, parentPath: group };
+            
+            this.controlPoints.push(controlPoint);
+        }
+        
+        paper.view.draw();
+    }
+
+    /**
+     * 重置动态绘画状态
+     */
+    resetDynamicDrawing() {
+        this.dynamicPoints = [];
+        this.dynamicGroup = null;
+        this.lastPoint = null;
+        this.lastTime = 0;
+        this.velocityHistory = [];
     }
 }
