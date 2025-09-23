@@ -633,7 +633,7 @@ class MechanicalArmSimulator {
         // 更新标题
         const headerTitle = document.getElementById('headerTitle');
         if (headerTitle) {
-            headerTitle.textContent = 'Robot Gripper Simulator';
+            headerTitle.textContent = 'GlyphForge';
         }
         
         // 更新模式切换按钮
@@ -671,7 +671,7 @@ class MechanicalArmSimulator {
         // 更新标题
         const headerTitle = document.getElementById('headerTitle');
         if (headerTitle) {
-            headerTitle.textContent = '3D Mechanical Arm Simulator';
+            headerTitle.textContent = 'GlyphForge';
         }
         
         // 更新模式切换按钮
