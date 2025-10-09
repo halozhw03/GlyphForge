@@ -8,8 +8,10 @@ class MechanicalArmSimulator {
         this.threeJSWorkArea = null;
         this.robotGripper = null;
         this.imageTracer = null;
+        this.printerManager = null;
         this.currentTool = 'freehand';
         this.currentMode = 'drawing'; // 'drawing' or 'robot'
+        this.printMode = 'simulate'; // 'simulate' or 'real'
         this.isInitialized = false;
         
         // 等待DOM加载完成后初始化
@@ -58,6 +60,11 @@ class MechanicalArmSimulator {
             // 初始化图片追踪器
             this.imageTracer = new ImageTracer();
             
+            // 初始化打印机管理器
+            this.printerManager = new PrinterManager();
+            this.setupPrinterCallbacks();
+            console.log('PrinterManager initialized:', this.printerManager);
+            
             // 设置模拟完成回调
             this.threeJSWorkArea.onSimulationComplete = () => {
                 console.log('App: Simulation completed, updating button state');
@@ -66,6 +73,9 @@ class MechanicalArmSimulator {
             
             // 绑定UI事件
             this.bindUIEvents();
+            
+            // 绑定打印机控制事件
+            this.bindPrinterControls();
             
             // 绑定工作空间事件
             this.bindWorkspaceEvents();
@@ -1139,6 +1149,18 @@ class MechanicalArmSimulator {
             firstObjectButton.classList.add('active');
         }
         
+        // 初始化打印机状态显示
+        const printerStatus = document.querySelector('.printer-status');
+        if (printerStatus) {
+            printerStatus.classList.remove('active'); // 默认隐藏打印机状态
+        }
+        
+        // 确保模拟控制默认可见
+        const simCanvas = document.querySelector('.sim-canvas-container');
+        const simInfo = document.querySelector('.sim-info');
+        if (simCanvas) simCanvas.classList.remove('hidden');
+        if (simInfo) simInfo.classList.remove('hidden');
+        
         // 显示欢迎信息
         setTimeout(() => {
             this.showNotification('Welcome! Switch to Robot Mode to simulate object picking and placing.', 'info', 5000);
@@ -1240,6 +1262,405 @@ class MechanicalArmSimulator {
      */
     showError(message) {
         this.showNotification(message, 'error', 5000);
+    }
+
+    /**
+     * 设置打印机管理器回调函数
+     */
+    setupPrinterCallbacks() {
+        if (!this.printerManager) return;
+        
+        // 连接状态变化回调
+        this.printerManager.onConnectionChange = (connected) => {
+            this.updateConnectionStatus(connected);
+        };
+        
+        // 打印状态变化回调
+        this.printerManager.onPrintStatusChange = (printing) => {
+            this.updatePrintStatus(printing);
+        };
+        
+        // 错误回调
+        this.printerManager.onError = (error) => {
+            this.showNotification(error, 'error', 4000);
+        };
+    }
+
+    /**
+     * 绑定打印机控制事件
+     */
+    bindPrinterControls() {
+        // 打印模式切换
+        const printModeRadios = document.querySelectorAll('input[name="printMode"]');
+        printModeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                this.printMode = e.target.value;
+                this.onPrintModeChange(e.target.value);
+            });
+        });
+        
+        // 打印机型号选择
+        const printerSelect = document.getElementById('printerSelect');
+        if (printerSelect) {
+            printerSelect.addEventListener('change', (e) => {
+                this.onPrinterSelect(e.target.value);
+            });
+        }
+        
+        // 连接按钮
+        const connectBtn = document.getElementById('connectPrinter');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => {
+                this.connectPrinter();
+            });
+        }
+        
+        // 断开连接按钮
+        const disconnectBtn = document.getElementById('disconnectPrinter');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => {
+                this.disconnectPrinter();
+            });
+        }
+        
+        // 开始打印按钮
+        const startPrintBtn = document.getElementById('startRealPrint');
+        if (startPrintBtn) {
+            startPrintBtn.addEventListener('click', () => {
+                this.startRealPrint();
+            });
+        }
+        
+        // 停止打印按钮
+        const stopPrintBtn = document.getElementById('stopRealPrint');
+        if (stopPrintBtn) {
+            stopPrintBtn.addEventListener('click', () => {
+                this.stopRealPrint();
+            });
+        }
+        
+        console.log('Printer controls bound');
+    }
+
+    /**
+     * 打印模式切换处理
+     */
+    onPrintModeChange(mode) {
+        console.log('Print mode changed to:', mode);
+        this.printMode = mode;
+        
+        const printerControls = document.querySelectorAll('.printer-controls');
+        const printerStatus = document.querySelector('.printer-status');
+        const simCanvas = document.querySelector('.sim-canvas-container');
+        const simInfo = document.querySelector('.sim-info');
+        const simOnlyControls = document.querySelectorAll('.sim-only-control');
+        const stepper = document.getElementById('realPrintStepper');
+        
+        if (mode === 'real') {
+            // 显示打印机控制
+            printerControls.forEach(control => {
+                control.classList.add('active');
+            });
+            if (printerStatus) {
+                printerStatus.classList.add('active');
+            }
+            
+            // 隐藏3D模拟相关元素
+            if (simCanvas) {
+                simCanvas.classList.add('hidden');
+            }
+            if (simInfo) {
+                simInfo.classList.add('hidden');
+            }
+            simOnlyControls.forEach(control => {
+                control.classList.add('hidden');
+            });
+
+            // Stepper 状态：Mode 完成，其它重置
+            if (stepper) {
+                this.updateStepper({ modeCompleted: true, modelCompleted: false, connected: false, printing: false });
+            }
+            
+            this.showNotification('Switched to Real Print mode. Please connect printer.', 'info', 3000);
+        } else {
+            // 隐藏打印机控制
+            printerControls.forEach(control => {
+                control.classList.remove('active');
+            });
+            if (printerStatus) {
+                printerStatus.classList.remove('active');
+            }
+            
+            // 显示3D模拟相关元素
+            if (simCanvas) {
+                simCanvas.classList.remove('hidden');
+            }
+            if (simInfo) {
+                simInfo.classList.remove('hidden');
+            }
+            simOnlyControls.forEach(control => {
+                control.classList.remove('hidden');
+            });
+
+            // 清空 Stepper 状态
+            if (stepper) {
+                this.updateStepper({ modeCompleted: false, modelCompleted: false, connected: false, printing: false });
+            }
+            
+            this.showNotification('Switched to Simulation mode', 'info', 2000);
+        }
+    }
+
+    /**
+     * 打印机型号选择处理
+     */
+    async onPrinterSelect(printerType) {
+        console.log('Printer selected:', printerType);
+        
+        try {
+            await this.printerManager.loadPrinterConfig(printerType);
+            this.showNotification(`Selected ${printerType}`, 'success', 2000);
+            // Stepper: 型号选择完成
+            this.updateStepper({ modelCompleted: true });
+        } catch (error) {
+            console.error('Failed to select printer:', error);
+        }
+    }
+
+    /**
+     * 连接打印机
+     */
+    async connectPrinter() {
+        if (!this.printerManager) {
+            this.showNotification('Printer manager not initialized', 'error', 3000);
+            return;
+        }
+        
+        try {
+            this.updateConnectionStatus('connecting');
+            await this.printerManager.connectPrinter();
+            // 状态将通过回调更新
+        } catch (error) {
+            console.error('Connection failed:', error);
+            this.updateConnectionStatus(false);
+        }
+    }
+
+    /**
+     * 断开打印机连接
+     */
+    async disconnectPrinter() {
+        if (!this.printerManager) return;
+        
+        try {
+            await this.printerManager.disconnectPrinter();
+        } catch (error) {
+            console.error('Disconnect failed:', error);
+        }
+    }
+
+    /**
+     * 开始真实打印
+     */
+    async startRealPrint() {
+        if (!this.printerManager) {
+            this.showNotification('Printer manager not initialized', 'error', 3000);
+            return;
+        }
+        
+        if (!this.printerManager.isConnected) {
+            this.showNotification('Please connect printer first', 'warning', 3000);
+            return;
+        }
+        
+        try {
+            const workArea = {
+                width: parseInt(document.getElementById('workWidth').value) || 220,
+                height: parseInt(document.getElementById('workHeight').value) || 220
+            };
+            
+            if (this.currentMode === 'drawing') {
+                // Drawing Mode - 打印路径
+                const paths = this.drawingCanvas.getAllPaths();
+                
+                if (paths.length === 0) {
+                    this.showNotification('No paths to print', 'warning', 3000);
+                    return;
+                }
+                
+                // 预览G-code（可选）
+                const gcode = this.printerManager.previewGcode(paths, workArea, 'drawing');
+                
+                // 确认打印
+                if (confirm(`Ready to print ${paths.length} path(s).\n\nPlease confirm:\n1. Printer is homed correctly\n2. Print bed is clean\n3. No obstacles\n\nStart printing?`)) {
+                    await this.printerManager.startDrawingPrint(paths, workArea);
+                    this.showNotification('Print started...', 'success', 2000);
+                }
+                
+            } else {
+                // Robot Mode - 打印机器人操作
+                const objects = this.workspaceCanvas.getAllObjects();
+                
+                const objectsWithTargets = objects.filter(obj => obj.targetPosition);
+                if (objectsWithTargets.length === 0) {
+                    this.showNotification('No objects with target positions', 'warning', 3000);
+                    return;
+                }
+                
+                // 预览G-code（可选）
+                const gcode = this.printerManager.previewGcode(objects, workArea, 'robot');
+                
+                // 确认打印
+                if (confirm(`Ready to execute ${objectsWithTargets.length} object operation(s).\n\nPlease confirm:\n1. Printer is homed correctly\n2. Work area is clear\n3. No obstacles\n\nStart operation?`)) {
+                    await this.printerManager.startRobotPrint(objects, workArea);
+                    this.showNotification('Robot operation started...', 'success', 2000);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Failed to start print:', error);
+            this.showNotification('Print failed: ' + error.message, 'error', 4000);
+        }
+    }
+
+    /**
+     * 停止真实打印
+     */
+    stopRealPrint() {
+        if (!this.printerManager) return;
+        
+        if (confirm('Stop printing?')) {
+            this.printerManager.stopPrint();
+            this.showNotification('Print stopped', 'info', 2000);
+        }
+    }
+
+    /**
+     * 更新连接状态显示
+     */
+    updateConnectionStatus(status) {
+        const statusElement = document.getElementById('connectionStatus');
+        const connectBtn = document.getElementById('connectPrinter');
+        const disconnectBtn = document.getElementById('disconnectPrinter');
+        const startPrintBtn = document.getElementById('startRealPrint');
+        const stopPrintBtn = document.getElementById('stopRealPrint');
+        
+        if (!statusElement) return;
+        
+        if (status === 'connecting') {
+            statusElement.textContent = 'Connecting...';
+            statusElement.className = 'status-connecting';
+            if (connectBtn) connectBtn.disabled = true;
+            // Stepper: 连接步骤激活
+            this.updateStepper({ connected: 'connecting' });
+        } else if (status === true) {
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'status-connected';
+            if (connectBtn) connectBtn.disabled = true;
+            if (disconnectBtn) disconnectBtn.disabled = false;
+            if (startPrintBtn) startPrintBtn.disabled = false;
+            // Stepper: 连接完成
+            this.updateStepper({ connected: true });
+        } else {
+            statusElement.textContent = 'Disconnected';
+            statusElement.className = 'status-disconnected';
+            if (connectBtn) connectBtn.disabled = false;
+            if (disconnectBtn) disconnectBtn.disabled = true;
+            if (startPrintBtn) startPrintBtn.disabled = true;
+            if (stopPrintBtn) stopPrintBtn.disabled = true;
+            // Stepper: 连接与打印状态重置
+            this.updateStepper({ connected: false, printing: false });
+        }
+    }
+
+    /**
+     * 更新打印状态显示
+     */
+    updatePrintStatus(printing) {
+        const statusElement = document.getElementById('printStatus');
+        const startPrintBtn = document.getElementById('startRealPrint');
+        const stopPrintBtn = document.getElementById('stopRealPrint');
+        
+        if (!statusElement) return;
+        
+        if (printing) {
+            statusElement.textContent = 'Printing';
+            statusElement.className = 'status-printing';
+            if (startPrintBtn) startPrintBtn.disabled = true;
+            if (stopPrintBtn) stopPrintBtn.disabled = false;
+            // Stepper: 打印步骤激活
+            this.updateStepper({ printing: true });
+        } else {
+            statusElement.textContent = 'Ready';
+            statusElement.className = '';
+            if (startPrintBtn) startPrintBtn.disabled = false;
+            if (stopPrintBtn) stopPrintBtn.disabled = true;
+            // Stepper: 打印步骤重置为未激活
+            this.updateStepper({ printing: false });
+        }
+    }
+
+    /**
+     * 更新 Real Print 步骤条
+     * state = { modeCompleted?: boolean, modelCompleted?: boolean, connected?: boolean | 'connecting', printing?: boolean }
+     */
+    updateStepper(state = {}) {
+        const stepMode = document.getElementById('step-mode');
+        const stepModel = document.getElementById('step-model');
+        const stepConnect = document.getElementById('step-connect');
+        const stepPrint = document.getElementById('step-print');
+        const connector1 = document.getElementById('connector-1');
+        const connector2 = document.getElementById('connector-2');
+        const connector3 = document.getElementById('connector-3');
+
+        // 在模拟模式下，stepper 可能不存在
+        if (!stepMode || !stepModel || !stepConnect || !stepPrint) return;
+
+        // 读取并合并状态（保持之前的完成状态，避免误清除）
+        this.stepperState = Object.assign({
+            modeCompleted: false,
+            modelCompleted: false,
+            connected: false,
+            printing: false
+        }, this.stepperState || {}, state);
+
+        const { modeCompleted, modelCompleted, connected, printing } = this.stepperState;
+
+        // Reset classes first
+        [stepMode, stepModel, stepConnect, stepPrint].forEach(el => {
+            el.classList.remove('active', 'completed');
+        });
+        [connector1, connector2, connector3].forEach(c => c && c.classList.remove('completed'));
+
+        // Step 1: Mode
+        if (modeCompleted) {
+            stepMode.classList.add('completed');
+            if (connector1) connector1.classList.add('completed');
+        } else {
+            // 若未完成，仅激活第一步
+            stepMode.classList.add('active');
+        }
+
+        // Step 2: Model
+        if (modelCompleted) {
+            stepModel.classList.add('completed');
+            if (connector2) connector2.classList.add('completed');
+        } else if (modeCompleted) {
+            stepModel.classList.add('active');
+        }
+
+        // Step 3: Connect
+        if (connected === true) {
+            stepConnect.classList.add('completed');
+            if (connector3) connector3.classList.add('completed');
+        } else if (connected === 'connecting') {
+            stepConnect.classList.add('active');
+        }
+
+        // Step 4: Print
+        if (printing) {
+            stepPrint.classList.add('active');
+        }
     }
 
     /**

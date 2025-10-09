@@ -1,0 +1,10 @@
+{
+  "name": "ender5",
+  "baudRate": 115200,
+  "maxX": 220,
+  "maxY": 220,
+  "maxZ": 300,
+  "nozzleDiameter": 0.4,
+  "filamentDiameter": 1.75
+}
+

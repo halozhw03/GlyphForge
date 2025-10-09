@@ -24,6 +24,16 @@ This project transforms a desktop FDM 3D printer into a low-cost 2D mechanical a
 - **Progress Tracking** - Shows completion percentage and estimated time
 - **Visual Feedback** - Grid overlay and coordinate system
 
+### 🆕 Real Printer Connection (NEW!)
+- **Ender 3 Pro & Ender 5 Support** - Direct USB connection to physical printers
+- **WebSerial Integration** - Browser-based serial communication
+- **Dual Print Modes** - Switch between simulation and real printing
+- **Automatic G-code Generation** - Convert paths to printer commands
+- **Real-time Status Monitoring** - Connection and print status display
+- **Safety Features** - Boundary checking, emergency stop, confirmation dialogs
+
+📖 **See [PRINTER_CONNECTION_GUIDE.md](PRINTER_CONNECTION_GUIDE.md) for detailed instructions**
+
 ## Usage
 
 ### Troubleshooting
@@ -115,7 +125,7 @@ drawing-interface/
 
 - [ ] Export paths to G-code format
 - [ ] Import SVG files for path conversion
-- [ ] Real printer connection via WebSerial
+- [x] ~~Real printer connection via WebSerial~~ ✅ **COMPLETED!**
 - [ ] 3D visualization with Z-axis control
 - [ ] Advanced path optimization algorithms
 - [ ] Collaborative drawing features
