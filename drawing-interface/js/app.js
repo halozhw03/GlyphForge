@@ -650,7 +650,7 @@ class MechanicalArmSimulator {
         const modeToggleButton = document.getElementById('modeToggle');
         if (modeToggleButton) {
             modeToggleButton.innerHTML = '<i class="fas fa-pencil-alt"></i> Drawing Mode';
-            modeToggleButton.classList.add('robot-mode');
+            // 保持与“Robot Mode”一致的白色背景，不再添加填充色样式
         }
         
         // 隐藏绘画面板，显示机器人面板

@@ -225,7 +225,7 @@ body {
 }
 
 .slider {
-    width: 80px;
+    width: 240px; /* 给滑杆更合理的宽度，提升可用性与对齐感 */
     height: 4px;
     border-radius: 2px;
     background: #e2e8f0;
@@ -249,6 +249,40 @@ body {
     background: #667eea;
     cursor: pointer;
     border: none;
+}
+
+/* ---- Simulation form layout tuning ---- */
+/* 统一各控件行的标签宽度与对齐，使 Print Mode / Speed / Work Area 排版更整齐 */
+.sim-controls .control-group {
+    align-items: center;
+}
+
+.sim-controls .control-group label {
+    width: 160px;
+    min-width: 160px;
+}
+
+/* 滑速数值更易读并与滑杆对齐 */
+#speedValue {
+    min-width: 36px;
+    text-align: left;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* 工作区域输入框尺寸与间距优化 */
+.work-area-inputs input {
+    width: 72px;
+}
+
+.work-area-inputs span {
+    margin: 0 0.25rem;
+    color: #4a5568;
+}
+
+/* 模式选项之间的间距略增，视觉更舒适 */
+.print-mode-selector {
+    gap: 0.75rem;
 }
 
 

@@ -1,0 +1,236 @@
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f9f9fb;
+  --text: #1d1d1f;
+  --text-weak: #6e6e73;
+  --border: #e5e5ea;
+  --border-weak: #efeff4;
+  --accent: #0a84ff;
+  --radius: 6px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+/* Header */
+.header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.header h1 {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.header h1 i {
+  color: var(--accent);
+}
+
+/* Panel shells */
+.left-panel, .right-panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.panel-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-header h3 {
+  color: var(--text);
+}
+
+/* Toolbars */
+.toolbar {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar-divider {
+  background: var(--border);
+}
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn:hover {
+  background: #f5f5f7;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: #f5f5f7;
+}
+
+/* Robot mode toggle as filled accent when active */
+.btn-secondary.robot-mode {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary.robot-mode:hover {
+  background: #0077ee;
+}
+
+/* Icon buttons */
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text-weak);
+  transform: none;
+}
+
+.tool-btn:hover {
+  border-color: #c7c7cc;
+  color: var(--text);
+  transform: none;
+}
+
+.tool-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Shape/Object pickers */
+.shape-selector, .object-shape-selector {
+  box-shadow: none;
+  border: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.shape-btn, .object-shape-btn {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text-weak);
+}
+
+.shape-btn:hover, .object-shape-btn:hover {
+  border-color: #c7c7cc;
+  color: var(--text);
+  transform: none;
+}
+
+.shape-btn.active, .object-shape-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Inputs */
+.work-area-inputs input, .printer-select {
+  border: 1px solid var(--border);
+  border-radius: 0;
+}
+
+/* Mode options */
+.mode-option {
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 0;
+}
+
+.mode-option:hover {
+  background: #f5f5f7;
+}
+
+.mode-option:has(input:checked) {
+  background: #eef5ff;
+  border-color: #cce2ff;
+}
+
+/* Stepper */
+.step-circle {
+  background: #f5f5f7;
+  border: 1px solid var(--border);
+}
+
+.step.active .step-circle {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Canvas containers */
+.canvas-container, .sim-canvas-container {
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* Remove background inner effects inherited */
+body {
+  overflow: auto;
+}
+
+/* Info blocks */
+.sim-controls, .path-info, .sim-info {
+  background: #fff;
+  border-color: var(--border);
+}
+
+.info-item span:first-child {
+  color: var(--text-weak);
+}
+
+/* Printer cards */
+.printer-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.printer-card .card-title {
+  color: var(--text);
+}
+
+.printer-select:hover {
+  border-color: #c7c7cc;
+}
+
+.printer-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10,132,255,.12);
+}
+
+/* Misc containers */
+.printer-status { border-radius: 0; border: none; border-top: 1px solid var(--border); box-shadow: none; background: #fff; }
+.object-select { border-radius: 0; }
+
+/* Status labels */
+.status-disconnected { color: #d70015; }
+.status-connected { color: #34c759; }
+.status-connecting { color: #bf5af2; }
+.status-printing { color: #0a84ff; animation: none; }
+
+
