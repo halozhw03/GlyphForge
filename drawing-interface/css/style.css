@@ -1062,26 +1062,18 @@ body {
     display: none !important;
 }
 
+/* Printer model display */
 .printer-select {
     width: 100%;
-    padding: 0.5rem 0.75rem; /* 减小内边距 */
-    border: 1px solid #e2e8f0; /* 使用更柔和的边框颜色 */
-    border-radius: 6px;
-    background: white;
-    font-size: 0.85rem; /* 略微减小字体 */
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.85rem;
     color: #2d3748;
-    cursor: pointer;
-    transition: all 0.2s;
 }
 
-.printer-select:hover {
-    border-color: #cbd5e0;
-}
-
-.printer-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.printer-select.readonly {
+    border-radius: 0;
 }
 
 /* Button block style for full width */

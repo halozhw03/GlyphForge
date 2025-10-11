@@ -727,19 +727,23 @@ class ThreeJSWorkArea {
         
         if (workWidthInput) {
             workWidthInput.addEventListener('change', (e) => {
-                this.workArea.width = parseInt(e.target.value);
+                const width = parseInt(e.target.value);
+                this.workArea.width = width;
                 this.recreateWorkArea();
+                this.robotGripper?.setWorkArea({ width });
                 // 重新设置路径以应用新的缩放比例
                 if (this.originalPaths.length > 0) {
                     this.setPaths(this.originalPaths);
                 }
             });
         }
-        
+
         if (workHeightInput) {
             workHeightInput.addEventListener('change', (e) => {
-                this.workArea.height = parseInt(e.target.value);
+                const height = parseInt(e.target.value);
+                this.workArea.height = height;
                 this.recreateWorkArea();
+                this.robotGripper?.setWorkArea({ height });
                 // 重新设置路径以应用新的缩放比例
                 if (this.originalPaths.length > 0) {
                     this.setPaths(this.originalPaths);

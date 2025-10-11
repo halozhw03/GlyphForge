@@ -8,7 +8,7 @@ class PrinterManager {
         this.isConnected = false;
         this.isPrinting = false;
         this.currentConfig = null;
-        this.printerType = 'ender3-pro';
+        this.printerType = 'ender3';
         
         // 回调函数
         this.onConnectionChange = null;
@@ -53,7 +53,7 @@ class PrinterManager {
     /**
      * 加载打印机配置
      */
-    async loadPrinterConfig(printerType) {
+    async loadPrinterConfig(printerType = 'ender3') {
         try {
             const response = await fetch(`printers/${printerType}.json`);
             if (!response.ok) {
@@ -97,7 +97,7 @@ class PrinterManager {
             
             // 加载当前打印机配置（如果还未加载）
             if (!this.currentConfig) {
-                await this.loadPrinterConfig(this.printerType);
+                await this.loadPrinterConfig();
             }
             
             // 请求串口连接

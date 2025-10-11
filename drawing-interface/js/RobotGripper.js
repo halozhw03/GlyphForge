@@ -10,6 +10,8 @@ class RobotGripper {
         this.gripperArm = null;
         this.gripper = null;
         this.objects = [];
+        this.rawObjects = [];
+        this.currentWorkArea = { ...this.threeJSWorkArea.workArea };
         this.currentTask = null;
         this.isSimulating = false;
         this.isPaused = false;
@@ -139,19 +141,42 @@ class RobotGripper {
      * 设置物品数据
      */
     setObjects(objects) {
-        // 清除现有物品
-        this.clearObjects();
-        
-        // 转换并创建3D物品
-        this.objects = objects.map(obj => this.create3DObject(obj));
-        
+        this.rawObjects = objects.map(obj => ({
+            id: obj.id,
+            type: obj.type,
+            position: { ...obj.position },
+            targetPosition: obj.targetPosition ? { ...obj.targetPosition } : null
+        }));
+        this.rebuildObjects();
         console.log('Objects set for robot simulation:', this.objects.length);
     }
-    
+
+    setWorkArea(workArea) {
+        if (!workArea) return;
+        this.currentWorkArea = {
+            width: workArea.width ?? this.currentWorkArea.width,
+            height: workArea.height ?? this.currentWorkArea.height,
+            depth: workArea.depth ?? this.currentWorkArea.depth
+        };
+        this.rebuildObjects(this.currentWorkArea);
+    }
+
+    rebuildObjects(workAreaOverride = null) {
+        this.clearObjects(true);
+
+        if (!this.rawObjects || this.rawObjects.length === 0) {
+            this.objects = [];
+            return;
+        }
+
+        const workArea = workAreaOverride || this.currentWorkArea || this.threeJSWorkArea.workArea;
+        this.objects = this.rawObjects.map(obj => this.create3DObject(obj, workArea));
+    }
+
     /**
      * 创建3D物品
      */
-    create3DObject(objectData) {
+    create3DObject(objectData, workAreaOverride = null) {
         let geometry, material;
         const size = 20;
         
@@ -181,7 +206,7 @@ class RobotGripper {
         const mesh = new THREE.Mesh(geometry, material);
         
         // 获取实际的3D工作区域尺寸
-        const workArea = this.threeJSWorkArea.workArea;
+        const workArea = workAreaOverride || this.currentWorkArea || this.threeJSWorkArea.workArea;
         
         // 获取画布尺寸（动态获取实际尺寸）
         let canvasWidth = 400;  // 默认宽度
@@ -224,6 +249,13 @@ class RobotGripper {
         };
         
         return object3D;
+    }
+    
+    /**
+     * 创建多个3D物品
+     */
+    create3DObjects(objects, workArea) {
+        return objects.map(obj => this.create3DObject(obj, workArea));
     }
     
     /**
@@ -543,7 +575,7 @@ class RobotGripper {
     /**
      * 清除所有物品
      */
-    clearObjects() {
+    clearObjects(preserveRaw = false) {
         this.objects.forEach(obj => {
             if (obj.mesh) {
                 this.scene.remove(obj.mesh);
@@ -552,8 +584,11 @@ class RobotGripper {
             }
         });
         this.objects = [];
-        
-        // 重置状态
+
+        if (!preserveRaw) {
+            this.rawObjects = [];
+        }
+
         this.stopRobotSimulation();
     }
     

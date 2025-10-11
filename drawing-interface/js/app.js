@@ -1306,14 +1306,6 @@ class MechanicalArmSimulator {
             });
         }
         
-        // 打印机型号选择
-        const printerSelect = document.getElementById('printerSelect');
-        if (printerSelect) {
-            printerSelect.addEventListener('change', (e) => {
-                this.onPrinterSelect(e.target.value);
-            });
-        }
-        
         // 连接按钮
         const connectBtn = document.getElementById('connectPrinter');
         if (connectBtn) {
@@ -1425,7 +1417,7 @@ class MechanicalArmSimulator {
     /**
      * 打印模式切换处理
      */
-    onPrintModeChange(mode) {
+    async onPrintModeChange(mode) {
         console.log('Print mode changed to:', mode);
         this.printMode = mode;
         
@@ -1448,7 +1440,14 @@ class MechanicalArmSimulator {
             if (printerStatus) {
                 printerStatus.classList.add('active');
             }
-            
+
+            try {
+                await this.printerManager.loadPrinterConfig();
+                this.updateStepper({ modeCompleted: true, modelCompleted: true, connected: false, printing: false });
+            } catch (error) {
+                console.error('Failed to load Ender 3 config:', error);
+            }
+
             // 隐藏3D模拟相关元素
             if (simCanvas) {
                 simCanvas.classList.add('hidden');
@@ -1550,16 +1549,8 @@ class MechanicalArmSimulator {
     /**
      * 打印机型号选择处理
      */
-    async onPrinterSelect(printerType) {
-        console.log('Printer selected:', printerType);
-        
-        try {
-            await this.printerManager.loadPrinterConfig(printerType);
-            // Stepper: 型号选择完成
-            this.updateStepper({ modelCompleted: true });
-        } catch (error) {
-            console.error('Failed to select printer:', error);
-        }
+    async onPrinterSelect() {
+        return this.printerManager.loadPrinterConfig();
     }
 
     /**
