@@ -192,18 +192,18 @@
 
                 <!-- Simulation Controls -->
                 <div class="sim-controls">
-                    <!-- Print Mode Selection -->
-                    <div class="control-group">
-                        <label>Print Mode:</label>
-                        <div class="print-mode-selector">
-                            <label class="mode-option">
-                                <input type="radio" name="printMode" value="simulate" checked>
-                                <span>Simulate</span>
-                            </label>
-                            <label class="mode-option">
-                                <input type="radio" name="printMode" value="real">
-                                <span>Real Print</span>
-                            </label>
+                    <!-- Sim Toolbar (match left toolbar style) -->
+                    <div class="toolbar">
+                        <div class="tool-group sim-tools">
+                            <button id="realPrintToggle" class="tool-btn" title="Real Print">
+                                <i class="fas fa-print"></i>
+                            </button>
+                            <button id="simSectionSpeed" class="tool-btn sim-section-btn" data-section="print-speed" title="Print Speed">
+                                <i class="fas fa-gauge"></i>
+                            </button>
+                            <button id="simSectionWorkArea" class="tool-btn sim-section-btn" data-section="work-area" title="Work Area">
+                                <i class="fas fa-ruler-combined"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -241,48 +241,41 @@
                         </select>
                     </div>
 
-                    <!-- Connection Controls -->
+                    <!-- Connection & Print Controls Combined -->
                     <div class="control-group printer-controls">
-                        <div class="printer-card">
-                            <div class="card-title"><i class="fas fa-plug"></i> Connection</div>
-                            <div class="button-grid two-col">
-                                <button id="connectPrinter" class="btn btn-primary btn-block">
-                                    <i class="fas fa-plug"></i> Connect
-                                </button>
-                                <button id="disconnectPrinter" class="btn btn-secondary btn-block" disabled>
-                                    <i class="fas fa-unlink"></i> Disconnect
-                                </button>
-                            </div>
+                        <label>Connection & Print:</label>
+                        <div class="button-grid two-col">
+                            <button id="connectPrinter" class="btn btn-primary btn-block">
+                                <i class="fas fa-plug"></i> Connect
+                            </button>
+                            <button id="disconnectPrinter" class="btn btn-secondary btn-block" disabled>
+                                <i class="fas fa-unlink"></i> Disconnect
+                            </button>
+                            <button id="startRealPrint" class="btn btn-success btn-block" disabled>
+                                <i class="fas fa-print"></i> Start Print
+                            </button>
+                            <button id="stopRealPrint" class="btn btn-danger btn-block" disabled>
+                                <i class="fas fa-stop"></i> Stop Print
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Print Controls -->
-                    <div class="control-group printer-controls">
-                        <div class="printer-card">
-                            <div class="card-title"><i class="fas fa-layer-group"></i> Print</div>
-                            <div class="button-grid two-col">
-                                <button id="startRealPrint" class="btn btn-success btn-block" disabled>
-                                    <i class="fas fa-print"></i> Start Print
-                                </button>
-                                <button id="stopRealPrint" class="btn btn-danger btn-block" disabled>
-                                    <i class="fas fa-stop"></i> Stop Print
-                                </button>
-                            </div>
+                    <div id="section-print-speed" class="sim-section sim-only-control hidden">
+                        <div class="control-group">
+                            <label for="printSpeed">Print Speed (mm/s):</label>
+                            <input type="range" id="printSpeed" min="10" max="100" value="30" class="slider">
+                            <span id="speedValue">30</span>
                         </div>
-                    </div>
-
-                    <div class="control-group sim-only-control">
-                        <label for="printSpeed">Print Speed (mm/s):</label>
-                        <input type="range" id="printSpeed" min="10" max="100" value="30" class="slider">
-                        <span id="speedValue">30</span>
                     </div>
                     
-                    <div class="control-group">
-                        <label for="workArea">Work Area (mm):</label>
-                        <div class="work-area-inputs">
-                            <input type="number" id="workWidth" value="220" min="100" max="400">
-                            <span>×</span>
-                            <input type="number" id="workHeight" value="220" min="100" max="400">
+                    <div id="section-work-area" class="sim-section hidden">
+                        <div class="control-group">
+                            <label for="workArea">Work Area (mm):</label>
+                            <div class="work-area-inputs">
+                                <input type="number" id="workWidth" value="220" min="100" max="400">
+                                <span>×</span>
+                                <input type="number" id="workHeight" value="220" min="100" max="400">
+                            </div>
                         </div>
                     </div>
                 </div>

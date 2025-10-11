@@ -229,6 +229,32 @@ body {
     color: white;
 }
 
+/* ---- Right sim-controls collapsible sections ---- */
+.sim-section {
+    padding: 1rem 1.5rem; /* 与左侧模式面板内容一致 */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(248, 250, 252, 0.8);
+}
+
+.sim-section.hidden {
+    display: none;
+}
+
+.tool-group.sim-tools {
+    gap: 0.5rem;
+}
+
+.sim-section-btn {
+    width: 40px;
+    height: 40px;
+}
+
+.sim-section-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: #fff;
+}
+
 .slider {
     width: 240px; /* 给滑杆更合理的宽度，提升可用性与对齐感 */
     height: 4px;
@@ -324,9 +350,9 @@ body {
 
 /* Simulation Controls */
 .sim-controls {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    background: rgba(248, 250, 252, 0.8);
+    padding: 0; /* 使用内部toolbar自身的内边距，使与左侧一致 */
+    border-bottom: none; /* 去掉多余的下边线 */
+    background: transparent; /* 透明背景，与左侧一致 */
 }
 
 .control-group {
@@ -448,6 +474,56 @@ body {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
     }
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    word-wrap: break-word;
+    transition: opacity 0.3s ease, transform 0.3s ease, top 0.3s ease;
+    cursor: pointer;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-content i {
+    font-size: 16px;
+}
+
+.notification:hover {
+    opacity: 0.9;
+    transform: translateX(-50%) translateY(-2px);
+}
+
+/* Notification Types */
+.notification-info {
+    background-color: #3182ce;
+}
+
+.notification-success {
+    background-color: #38a169;
+}
+
+.notification-warning {
+    background-color: #d69e2e;
+}
+
+.notification-error {
+    background-color: #e53e3e;
 }
 
 /* Status Indicators */
@@ -821,29 +897,38 @@ body {
 
 .printer-controls {
     display: none; /* Hidden by default, shown when real print mode is selected */
+    padding: 0.75rem 1.5rem; /* 添加内边距，保持与其他控件一致 */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .printer-controls.active {
     display: block;
 }
 
+/* 减少打印机控制组内的间距 */
+.printer-controls .control-group {
+    margin-bottom: 0.75rem; /* 从1rem减少到0.75rem */
+}
+
 /* Stepper for Real Print */
 .stepper {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0;
+    gap: 0.35rem; /* 减小间距 */
+    padding: 0; /* 移除额外的padding */
+    margin-bottom: 0.5rem; /* 减少底部间距 */
 }
 
 .step {
     display: flex;
+    flex-direction: column; /* 改为垂直布局，节省空间 */
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .step-circle {
-    width: 28px;
-    height: 28px;
+    width: 32px; /* 略微增大使其更醒目 */
+    height: 32px;
     border-radius: 50%;
     background: #edf2f7;
     color: #4a5568;
@@ -851,6 +936,7 @@ body {
     align-items: center;
     justify-content: center;
     border: 2px solid #e2e8f0;
+    font-size: 0.85rem; /* 图标稍小 */
 }
 
 .step.active .step-circle {
@@ -866,15 +952,19 @@ body {
 }
 
 .step-label {
-    font-size: 0.8rem;
+    font-size: 0.7rem; /* 文字更小更紧凑 */
     color: #4a5568;
     font-weight: 600;
+    white-space: nowrap; /* 防止换行 */
 }
 
 .step-connector {
     flex: 1;
     height: 2px;
     background: #e2e8f0;
+    min-width: 12px; /* 设置最小宽度防止过短 */
+    align-self: center;
+    margin-top: -18px; /* 提升连接线使其与圆圈对齐 */
 }
 
 .step-connector.completed {
@@ -884,32 +974,59 @@ body {
 /* Printer control card */
 .printer-card {
     width: 100%;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.7); /* 降低透明度使其更轻盈 */
     border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 10px;
-    padding: 0.75rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 8px; /* 减小圆角 */
+    padding: 0.6rem; /* 减小内边距 */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); /* 减小阴影 */
 }
 
 .printer-card .card-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    font-weight: 700;
+    gap: 0.4rem;
+    font-size: 0.85rem; /* 略微减小字体 */
+    font-weight: 600; /* 从700降至600 */
     color: #2d3748;
     margin-bottom: 0.5rem;
+}
+
+.printer-card .card-title i {
+    font-size: 0.9rem; /* 图标略小 */
 }
 
 .button-grid.two-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    gap: 0.4rem; /* 减小按钮间距 */
+    width: 100%;
 }
 
 /* Remove extra bottom margin inside button grids to keep equal heights */
 .button-grid .btn-block {
     margin-bottom: 0;
+}
+
+/* 优化打印机控制中的按钮尺寸 */
+.printer-controls .btn-block {
+    padding: 0.5rem 0.75rem; /* 减小按钮内边距 */
+    font-size: 0.85rem; /* 减小字体 */
+    white-space: nowrap; /* 防止按钮文字换行 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.printer-controls .btn-block i {
+    font-size: 0.9rem; /* 图标略小 */
+}
+
+/* 确保按钮在2x2网格中保持一致高度 */
+.printer-card .button-grid.two-col .btn-block {
+    min-height: 38px; /* 设置最小高度保持一致 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
 @media (max-width: 480px) {
@@ -947,11 +1064,11 @@ body {
 
 .printer-select {
     width: 100%;
-    padding: 0.6rem;
-    border: 1px solid #cbd5e0;
+    padding: 0.5rem 0.75rem; /* 减小内边距 */
+    border: 1px solid #e2e8f0; /* 使用更柔和的边框颜色 */
     border-radius: 6px;
     background: white;
-    font-size: 0.875rem;
+    font-size: 0.85rem; /* 略微减小字体 */
     color: #2d3748;
     cursor: pointer;
     transition: all 0.2s;
@@ -980,6 +1097,24 @@ body {
 /* Better button spacing */
 .control-group button {
     font-size: 0.875rem;
+}
+
+/* 优化打印机控制组内的label样式 */
+.printer-controls .control-group label {
+    font-size: 0.85rem; /* 减小标签字体 */
+    font-weight: 500;
+    color: #4a5568;
+    min-width: auto; /* 移除固定宽度 */
+}
+
+/* Connection & Print 布局调整 */
+.printer-controls .control-group:has(.button-grid) {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.printer-controls .control-group:has(.button-grid) label {
+    margin-bottom: 0.5rem;
 }
 
 .printer-status {

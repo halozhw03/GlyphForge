@@ -126,7 +126,8 @@ class PrinterManager {
                     }
                 });
                 
-                // 请求用户选择串口
+                // 直接请求端口（最大兼容性）
+                // 部分 p5.webserial 版本对 filters 兼容性不一致，这里不传过滤项，避免报错
                 await this.fab.serial.requestPort();
                 console.log('Printer connection requested');
             } else {
@@ -136,7 +137,12 @@ class PrinterManager {
         } catch (error) {
             console.error('Failed to connect printer:', error);
             if (this.onError) {
-                this.onError('Failed to connect printer: ' + error.message);
+                // 用户取消选择端口时返回更友好的提示
+                if (error && (error.name === 'NotFoundError' || /No port selected/i.test(error.message))) {
+                    this.onError('Connection cancelled or no serial device found');
+                } else {
+                    this.onError('Failed to connect printer: ' + error.message);
+                }
             }
             throw error;
         }

@@ -116,6 +116,9 @@ class MechanicalArmSimulator {
         
         // 键盘快捷键
         this.bindKeyboardShortcuts();
+
+        // 右侧折叠交互
+        this.bindSimSectionToggles();
     }
 
     /**
@@ -668,7 +671,6 @@ class MechanicalArmSimulator {
         // 设置默认机器人工具
         this.selectRobotTool('place-object');
         
-        this.showNotification('Switched to Robot Mode', 'info', 2000);
         console.log('Switched to robot mode');
     }
 
@@ -703,7 +705,6 @@ class MechanicalArmSimulator {
             this.robotGripper.disableRobotMode();
         }
         
-        this.showNotification('Switched to Drawing Mode', 'info', 2000);
         console.log('Switched to drawing mode');
     }
 
@@ -742,52 +743,21 @@ class MechanicalArmSimulator {
      * 显示机器人工具提示
      */
     showRobotToolTip(toolName) {
-        const tips = {
-            'place-object': 'Click to place selected object on the workspace',
-            'set-target': 'Click to set target position for objects',
-            'delete-object': 'Click on objects to delete them'
-        };
-        
-        const tip = tips[toolName];
-        if (tip) {
-            this.showNotification(tip, 'info', 3000);
-        }
+        // 提示已移除以减少弹窗
     }
 
     /**
      * 显示工具提示
      */
     showToolTip(toolName) {
-        const tips = {
-            freehand: 'Click and drag to draw freehand lines. Control points will appear automatically after drawing.',
-            line: 'Click to add points, Enter to finish, Escape to cancel',
-            bezier: 'Click 4 points to create a Bezier curve',
-            shape: 'Click to select a preset shape, then click on canvas to place it',
-            'image-trace': 'Upload an image to automatically trace its outline and convert it to drawable paths',
-            dynamic: 'Dynamic Art Mode: Draw with dramatic size variation! Move VERY SLOWLY for huge dots (up to 20px), move quickly for tiny dots. The slower you move, the bigger and more opaque the dots become.',
-            delete: 'Click on paths to delete them'
-        };
-        
-        const tip = tips[toolName];
-        if (tip) {
-            this.showNotification(tip, 'info', 3000);
-        }
+        // 提示已移除以减少弹窗
     }
 
     /**
      * 显示形状提示
      */
     showShapeTip(shapeType) {
-        const tips = {
-            circle: 'Click anywhere on the canvas to place a circle',
-            star: 'Click anywhere on the canvas to place a 5-pointed star',
-            heart: 'Click anywhere on the canvas to place a heart shape'
-        };
-        
-        const tip = tips[shapeType];
-        if (tip) {
-            this.showNotification(tip, 'info', 3000);
-        }
+        // 提示已移除以减少弹窗
     }
 
     /**
@@ -843,17 +813,7 @@ class MechanicalArmSimulator {
      * 显示物品提示
      */
     showObjectTip(objectType) {
-        const tips = {
-            cube: 'Selected Cube - Click on the workspace to place cube objects',
-            sphere: 'Selected Sphere - Click on the workspace to place sphere objects',
-            cylinder: 'Selected Cylinder - Click on the workspace to place cylinder objects',
-            box: 'Selected Box - Click on the workspace to place box objects'
-        };
-        
-        const tip = tips[objectType];
-        if (tip) {
-            this.showNotification(tip, 'info', 3000);
-        }
+        // 提示已移除以减少弹窗
     }
 
     /**
@@ -891,8 +851,6 @@ class MechanicalArmSimulator {
                 console.log('Clearing robot gripper objects');
                 this.robotGripper.clearObjects();
             }
-            
-            this.showNotification('All objects cleared', 'success', 2000);
         } else {
             // 清除绘图模式内容
             if (this.drawingCanvas) {
@@ -906,8 +864,6 @@ class MechanicalArmSimulator {
                 this.threeJSWorkArea.stopSimulation();
                 this.threeJSWorkArea.setPaths([]);
             }
-            
-            this.showNotification('All paths cleared', 'success', 2000);
         }
         
         // 重置模拟按钮
@@ -1019,8 +975,6 @@ class MechanicalArmSimulator {
             
             // 更新按钮状态
             this.updateSimulateButton('pause');
-            
-            this.showNotification('Drawing simulation started', 'success', 2000);
         } catch (error) {
             console.error('Error starting drawing simulation:', error);
             this.showNotification('Failed to start simulation: ' + error.message, 'error', 4000);
@@ -1063,8 +1017,6 @@ class MechanicalArmSimulator {
             
             // 更新按钮状态
             this.updateSimulateButton('pause');
-            
-            this.showNotification(`Robot simulation started for ${objectsWithTargets.length} objects`, 'success', 2000);
         } catch (error) {
             console.error('Error starting robot simulation:', error);
             this.showNotification('Failed to start robot simulation: ' + error.message, 'error', 4000);
@@ -1078,7 +1030,6 @@ class MechanicalArmSimulator {
         if (this.threeJSWorkArea) {
             this.threeJSWorkArea.stopSimulation();
             this.updateSimulateButton('simulate');
-            this.showNotification('Simulation stopped', 'info', 2000);
         }
     }
 
@@ -1088,7 +1039,6 @@ class MechanicalArmSimulator {
     onSimulationComplete() {
         console.log('App: Setting button to completed state');
         this.updateSimulateButton('completed');
-        this.showNotification('Simulation completed successfully!', 'success', 3000);
     }
 
     /**
@@ -1161,10 +1111,8 @@ class MechanicalArmSimulator {
         if (simCanvas) simCanvas.classList.remove('hidden');
         if (simInfo) simInfo.classList.remove('hidden');
         
-        // 显示欢迎信息
-        setTimeout(() => {
-            this.showNotification('Welcome! Switch to Robot Mode to simulate object picking and placing.', 'info', 5000);
-        }, 1000);
+        // 设置Real Print按钮的初始状态（默认为simulate模式）
+        this.updateRealPrintToggleButton();
     }
 
     /**
@@ -1182,6 +1130,11 @@ class MechanicalArmSimulator {
      * 显示通知
      */
     showNotification(message, type = 'info', duration = 3000) {
+        // 初始化通知管理器（如果还没初始化）
+        if (!this.notifications) {
+            this.notifications = [];
+        }
+
         // 创建通知元素
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
@@ -1191,57 +1144,108 @@ class MechanicalArmSimulator {
                 <span>${message}</span>
             </div>
         `;
-        
-        // 添加样式
-        Object.assign(notification.style, {
-            position: 'fixed',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: '500',
-            zIndex: '10000',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            maxWidth: '400px',
-            wordWrap: 'break-word',
-            transition: 'opacity 0.3s ease, transform 0.3s ease'
-        });
-        
-        // 设置背景色
-        const colors = {
-            info: '#3182ce',
-            success: '#38a169',
-            warning: '#d69e2e',
-            error: '#e53e3e'
+
+        // 添加样式类
+        notification.className = `notification notification-${type}`;
+
+        // 添加到页面
+        document.body.appendChild(notification);
+
+        // 将通知添加到管理器
+        this.notifications.push(notification);
+
+        // 计算通知位置并触发动画
+        this.updateNotificationPositions();
+        this.animateNotificationIn(notification);
+
+        // 自动移除
+        const removeNotification = () => {
+            const index = this.notifications.indexOf(notification);
+            if (index > -1) {
+                this.notifications.splice(index, 1);
+                // 先平滑移动其他通知，再移除当前通知
+                this.animateNotificationRemoval(notification, index);
+            } else {
+                // 如果通知不在数组中，直接移除
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(-50%) translateY(-20px)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
         };
-        notification.style.backgroundColor = colors[type] || colors.info;
-        
+
+        setTimeout(removeNotification, duration);
+    }
+
+    /**
+     * 更新所有通知的位置，使其垂直堆叠
+     */
+    updateNotificationPositions() {
+        const notificationHeight = 70; // 通知的高度（包括间距），增加间距使堆叠更明显
+        const startTop = 20; // 第一个通知的top位置
+
+        this.notifications.forEach((notification, index) => {
+            const topPosition = startTop + (index * notificationHeight);
+            const currentTop = parseFloat(notification.style.top) || topPosition;
+
+            // 如果位置差距较大，使用动画过渡
+            if (Math.abs(currentTop - topPosition) > 1) {
+                notification.style.transition = 'top 0.3s ease-out';
+                notification.style.top = `${topPosition}px`;
+            } else {
+                notification.style.top = `${topPosition}px`;
+            }
+        });
+    }
+
+    /**
+     * 触发动画让通知滑入位置
+     */
+    animateNotificationIn(notification) {
         // 设置初始状态（透明且稍微向上）
         notification.style.opacity = '0';
         notification.style.transform = 'translateX(-50%) translateY(-10px)';
-        
-        // 添加到页面
-        document.body.appendChild(notification);
-        
-        // 触发淡入动画
+
+        // 触发动画
         requestAnimationFrame(() => {
             notification.style.opacity = '1';
             notification.style.transform = 'translateX(-50%) translateY(0)';
         });
-        
-        // 自动移除
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(-50%) translateY(-20px)';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+    }
+
+    /**
+     * 动画移除通知，由上到下平滑消失
+     */
+    animateNotificationRemoval(notification, originalIndex) {
+        const notificationHeight = 70;
+        const startTop = 20;
+
+        // 先移动其他通知到正确位置
+        this.notifications.forEach((otherNotification, index) => {
+            if (index >= originalIndex) { // 只移动在消失通知下方的通知
+                const targetTop = startTop + (index * notificationHeight);
+                const currentTop = parseFloat(otherNotification.style.top) || startTop;
+
+                if (Math.abs(currentTop - targetTop) > 1) { // 如果位置差距较大，才需要动画
+                    otherNotification.style.transition = 'top 0.3s ease-out';
+                    otherNotification.style.top = `${targetTop}px`;
                 }
-            }, 300);
-        }, duration);
+            }
+        });
+
+        // 同时让当前通知消失
+        notification.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(-50%) translateY(-20px)';
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
     }
 
     /**
@@ -1290,14 +1294,17 @@ class MechanicalArmSimulator {
      * 绑定打印机控制事件
      */
     bindPrinterControls() {
-        // 打印模式切换
-        const printModeRadios = document.querySelectorAll('input[name="printMode"]');
-        printModeRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                this.printMode = e.target.value;
-                this.onPrintModeChange(e.target.value);
+        // Real Print模式切换按钮
+        const realPrintToggle = document.getElementById('realPrintToggle');
+        if (realPrintToggle) {
+            realPrintToggle.addEventListener('click', () => {
+                // 在simulate和real之间切换
+                const newMode = this.printMode === 'simulate' ? 'real' : 'simulate';
+                this.printMode = newMode;
+                this.onPrintModeChange(newMode);
+                this.updateRealPrintToggleButton();
             });
-        });
+        }
         
         // 打印机型号选择
         const printerSelect = document.getElementById('printerSelect');
@@ -1343,6 +1350,79 @@ class MechanicalArmSimulator {
     }
 
     /**
+     * 更新Real Print切换按钮状态
+     */
+    updateRealPrintToggleButton() {
+        const realPrintToggle = document.getElementById('realPrintToggle');
+        if (!realPrintToggle) return;
+        
+        if (this.printMode === 'real') {
+            // Real Print模式激活
+            realPrintToggle.classList.add('active');
+            realPrintToggle.title = 'Switch to Simulate';
+        } else {
+            // Simulate模式
+            realPrintToggle.classList.remove('active');
+            realPrintToggle.title = 'Real Print';
+        }
+    }
+
+    /**
+     * 绑定右侧折叠按钮交互
+     */
+    bindSimSectionToggles() {
+        const buttons = document.querySelectorAll('.sim-section-btn');
+        const sectionMap = {
+            'print-speed': document.getElementById('section-print-speed'),
+            'work-area': document.getElementById('section-work-area')
+        };
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const key = e.currentTarget.dataset.section;
+                const targetSection = sectionMap[key];
+                const isOpen = targetSection && !targetSection.classList.contains('hidden');
+                if (isOpen) {
+                    // 再次点击同一按钮 -> 收起
+                    this.toggleSimSection(key, false, buttons, sectionMap);
+                } else {
+                    // 打开该分组并收起其他
+                    Object.keys(sectionMap).forEach(k => {
+                        this.toggleSimSection(k, k === key, buttons, sectionMap);
+                    });
+                }
+            });
+        });
+    }
+
+    /**
+     * 展开/收起具体分组并更新按钮激活态
+     */
+    toggleSimSection(key, open, buttons, sectionMap) {
+        const section = sectionMap[key];
+        if (!section) return;
+        if (open) {
+            section.classList.remove('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+        // 更新按钮激活态
+        buttons.forEach(b => {
+            if (b.dataset.section === key) {
+                if (open) b.classList.add('active'); else b.classList.remove('active');
+            } else {
+                // 其他按钮根据其分组是否打开来更新
+                const otherSection = sectionMap[b.dataset.section];
+                if (otherSection && !otherSection.classList.contains('hidden')) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            }
+        });
+    }
+
+    /**
      * 打印模式切换处理
      */
     onPrintModeChange(mode) {
@@ -1355,6 +1435,10 @@ class MechanicalArmSimulator {
         const simInfo = document.querySelector('.sim-info');
         const simOnlyControls = document.querySelectorAll('.sim-only-control');
         const stepper = document.getElementById('realPrintStepper');
+        
+        // 获取Print Speed和Work Area按钮
+        const printSpeedBtn = document.getElementById('simSectionSpeed');
+        const workAreaBtn = document.getElementById('simSectionWorkArea');
         
         if (mode === 'real') {
             // 显示打印机控制
@@ -1376,12 +1460,32 @@ class MechanicalArmSimulator {
                 control.classList.add('hidden');
             });
 
+            // 在真实打印模式下收起速度分组和工作区域分组
+            const sectionMap = {
+                'print-speed': document.getElementById('section-print-speed'),
+                'work-area': document.getElementById('section-work-area')
+            };
+            if (sectionMap['print-speed']) sectionMap['print-speed'].classList.add('hidden');
+            if (sectionMap['work-area']) sectionMap['work-area'].classList.add('hidden');
+            
+            // 禁用Print Speed和Work Area按钮
+            if (printSpeedBtn) {
+                printSpeedBtn.disabled = true;
+                printSpeedBtn.classList.remove('active');
+                printSpeedBtn.style.opacity = '0.5';
+                printSpeedBtn.style.cursor = 'not-allowed';
+            }
+            if (workAreaBtn) {
+                workAreaBtn.disabled = true;
+                workAreaBtn.classList.remove('active');
+                workAreaBtn.style.opacity = '0.5';
+                workAreaBtn.style.cursor = 'not-allowed';
+            }
+
             // Stepper 状态：Mode 完成，其它重置
             if (stepper) {
                 this.updateStepper({ modeCompleted: true, modelCompleted: false, connected: false, printing: false });
             }
-            
-            this.showNotification('Switched to Real Print mode. Please connect printer.', 'info', 3000);
         } else {
             // 隐藏打印机控制
             printerControls.forEach(control => {
@@ -1398,16 +1502,48 @@ class MechanicalArmSimulator {
             if (simInfo) {
                 simInfo.classList.remove('hidden');
             }
+            
+            // 恢复模拟控制的显示，但保持折叠section的hidden状态
             simOnlyControls.forEach(control => {
-                control.classList.remove('hidden');
+                // 只移除非sim-section元素的hidden类
+                // sim-section应该保持折叠状态，由用户点击按钮控制
+                if (!control.classList.contains('sim-section')) {
+                    control.classList.remove('hidden');
+                }
             });
+
+            // 确保所有折叠的sim-section保持hidden状态
+            const sectionMap = {
+                'print-speed': document.getElementById('section-print-speed'),
+                'work-area': document.getElementById('section-work-area')
+            };
+            // 保持所有section为hidden状态，让用户通过工具栏按钮控制
+            Object.values(sectionMap).forEach(section => {
+                if (section) {
+                    section.classList.add('hidden');
+                }
+            });
+            // 移除所有section按钮的active状态
+            document.querySelectorAll('.sim-section-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 启用Print Speed和Work Area按钮
+            if (printSpeedBtn) {
+                printSpeedBtn.disabled = false;
+                printSpeedBtn.style.opacity = '';
+                printSpeedBtn.style.cursor = '';
+            }
+            if (workAreaBtn) {
+                workAreaBtn.disabled = false;
+                workAreaBtn.style.opacity = '';
+                workAreaBtn.style.cursor = '';
+            }
 
             // 清空 Stepper 状态
             if (stepper) {
                 this.updateStepper({ modeCompleted: false, modelCompleted: false, connected: false, printing: false });
             }
-            
-            this.showNotification('Switched to Simulation mode', 'info', 2000);
         }
     }
 
@@ -1419,7 +1555,6 @@ class MechanicalArmSimulator {
         
         try {
             await this.printerManager.loadPrinterConfig(printerType);
-            this.showNotification(`Selected ${printerType}`, 'success', 2000);
             // Stepper: 型号选择完成
             this.updateStepper({ modelCompleted: true });
         } catch (error) {
@@ -1494,7 +1629,6 @@ class MechanicalArmSimulator {
                 // 确认打印
                 if (confirm(`Ready to print ${paths.length} path(s).\n\nPlease confirm:\n1. Printer is homed correctly\n2. Print bed is clean\n3. No obstacles\n\nStart printing?`)) {
                     await this.printerManager.startDrawingPrint(paths, workArea);
-                    this.showNotification('Print started...', 'success', 2000);
                 }
                 
             } else {
@@ -1513,7 +1647,6 @@ class MechanicalArmSimulator {
                 // 确认打印
                 if (confirm(`Ready to execute ${objectsWithTargets.length} object operation(s).\n\nPlease confirm:\n1. Printer is homed correctly\n2. Work area is clear\n3. No obstacles\n\nStart operation?`)) {
                     await this.printerManager.startRobotPrint(objects, workArea);
-                    this.showNotification('Robot operation started...', 'success', 2000);
                 }
             }
             
@@ -1531,7 +1664,6 @@ class MechanicalArmSimulator {
         
         if (confirm('Stop printing?')) {
             this.printerManager.stopPrint();
-            this.showNotification('Print stopped', 'info', 2000);
         }
     }
 
