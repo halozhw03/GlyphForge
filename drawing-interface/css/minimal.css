@@ -67,11 +67,6 @@ html, body {
   transform: none;
 }
 
-.btn:hover {
-  background: #f5f5f7;
-  box-shadow: none;
-  transform: none;
-}
 
 .btn-primary {
   background: var(--accent);
@@ -83,9 +78,6 @@ html, body {
   color: var(--text);
 }
 
-.btn-secondary:hover {
-  background: #f5f5f7;
-}
 
 /* Robot mode toggle as filled accent when active */
 .btn-secondary.robot-mode {
@@ -94,9 +86,6 @@ html, body {
   color: #fff;
 }
 
-.btn-secondary.robot-mode:hover {
-  background: #0077ee;
-}
 
 /* Icon buttons */
 .tool-btn {
@@ -108,11 +97,6 @@ html, body {
   transform: none;
 }
 
-.tool-btn:hover {
-  border-color: #c7c7cc;
-  color: var(--text);
-  transform: none;
-}
 
 .tool-btn.active {
   background: var(--accent);
@@ -133,11 +117,6 @@ html, body {
   color: var(--text-weak);
 }
 
-.shape-btn:hover, .object-shape-btn:hover {
-  border-color: #c7c7cc;
-  color: var(--text);
-  transform: none;
-}
 
 .shape-btn.active, .object-shape-btn.active {
   background: var(--accent);
@@ -158,9 +137,6 @@ html, body {
   border-radius: 0;
 }
 
-.mode-option:hover {
-  background: #f5f5f7;
-}
 
 .mode-option:has(input:checked) {
   background: #eef5ff;
@@ -213,9 +189,6 @@ body {
   color: var(--text);
 }
 
-.printer-select:hover {
-  border-color: #c7c7cc;
-}
 
 .printer-select:focus {
   outline: none;
@@ -231,6 +204,6 @@ body {
 .status-disconnected { color: #d70015; }
 .status-connected { color: #34c759; }
 .status-connecting { color: #bf5af2; }
-.status-printing { color: #0a84ff; animation: none; }
+.status-printing { color: #0a84ff; }
 
 

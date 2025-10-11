@@ -111,7 +111,9 @@ body {
 }
 
 .btn-secondary:hover {
-    background: #4a5568;
+    background: #f7fafc;
+    color: #2d3748;
+    border-color: #e2e8f0;
 }
 
 /* Main Content */
@@ -213,9 +215,9 @@ body {
 }
 
 .tool-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
-    transform: translateY(-1px);
+    border-color: #cbd5e0;
+    color: #4a5568;
+    background: #f7fafc;
 }
 
 .tool-btn.active {
@@ -493,8 +495,9 @@ body {
 }
 
 .shape-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: #cbd5e0;
+    color: #4a5568;
+    background: #f7fafc;
     transform: scale(1.05);
 }
 
@@ -650,8 +653,9 @@ body {
 }
 
 .object-shape-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: #cbd5e0;
+    color: #4a5568;
+    background: #f7fafc;
     transform: scale(1.05);
 }
 
@@ -724,7 +728,8 @@ body {
 }
 
 .mode-option:hover {
-    background: rgba(102, 126, 234, 0.1);
+    background: #f7fafc;
+    border-color: #cbd5e0;
 }
 
 .mode-option:has(input:checked) {
@@ -882,7 +887,7 @@ body {
 }
 
 .printer-select:hover {
-    border-color: #667eea;
+    border-color: #cbd5e0;
 }
 
 .printer-select:focus {
