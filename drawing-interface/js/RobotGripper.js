@@ -180,21 +180,29 @@ class RobotGripper {
         let geometry, material;
         const size = 20;
         
+        // 记录物体尺寸用于叠放计算
+        let objectSize = { width: size, height: size, depth: size };
+        
         switch (objectData.type) {
             case 'cube':
                 geometry = new THREE.BoxGeometry(size, size, size);
+                objectSize = { width: size, height: size, depth: size };
                 break;
             case 'sphere':
                 geometry = new THREE.SphereGeometry(size/2, 16, 16);
+                objectSize = { width: size, height: size, depth: size };
                 break;
             case 'cylinder':
                 geometry = new THREE.CylinderGeometry(size/2, size/2, size, 16);
+                objectSize = { width: size, height: size, depth: size };
                 break;
             case 'box':
                 geometry = new THREE.BoxGeometry(size * 1.5, size * 0.7, size);
+                objectSize = { width: size * 1.5, height: size * 0.7, depth: size };
                 break;
             default:
                 geometry = new THREE.BoxGeometry(size, size, size);
+                objectSize = { width: size, height: size, depth: size };
         }
         
         material = new THREE.MeshLambertMaterial({ 
@@ -226,7 +234,7 @@ class RobotGripper {
         
         mesh.position.set(
             (objectData.position.x - canvasWidth/2) * scaleX,
-            size/2, // 放在地面上
+            objectSize.height/2, // 放在地面上
             (objectData.position.y - canvasHeight/2) * scaleZ
         );
         
@@ -239,10 +247,11 @@ class RobotGripper {
             id: objectData.id,
             type: objectData.type,
             mesh: mesh,
+            size: objectSize,
             originalPosition: { ...mesh.position },
             targetPosition: objectData.targetPosition ? {
                 x: (objectData.targetPosition.x - canvasWidth/2) * scaleX,
-                y: size/2,
+                y: objectSize.height/2, // 初始高度，会在叠放时调整
                 z: (objectData.targetPosition.y - canvasHeight/2) * scaleZ
             } : null,
             isGripped: false
@@ -299,6 +308,36 @@ class RobotGripper {
     }
     
     /**
+     * 检测目标位置是否有物体并计算叠放高度
+     */
+    calculateStackHeight(targetX, targetZ, currentObjectId) {
+        let maxHeight = 0;
+        const threshold = 15; // 检测范围阈值（mm）
+        
+        // 遍历所有已放置的物体
+        for (const obj of this.objects) {
+            // 跳过当前物体本身
+            if (obj.id === currentObjectId) continue;
+            
+            // 检查物体是否已被放置到目标区域
+            if (!obj.mesh || !obj.mesh.position) continue;
+            
+            const dx = Math.abs(obj.mesh.position.x - targetX);
+            const dz = Math.abs(obj.mesh.position.z - targetZ);
+            
+            // 如果物体在目标位置的范围内
+            if (dx < threshold && dz < threshold) {
+                // 计算该物体顶部的高度
+                const topHeight = obj.mesh.position.y + (obj.size.height / 2);
+                maxHeight = Math.max(maxHeight, topHeight);
+                console.log(`Found object at target position: ${obj.id}, top height: ${topHeight}`);
+            }
+        }
+        
+        return maxHeight;
+    }
+    
+    /**
      * 执行抓取和放置任务
      */
     async executePickAndPlace(objectData) {
@@ -328,17 +367,34 @@ class RobotGripper {
             z: objectData.originalPosition.z
         });
         
-        // 5. 移动到目标位置上方
+        // 检测目标位置是否有物体，计算叠放高度
+        const stackHeight = this.calculateStackHeight(
+            objectData.targetPosition.x,
+            objectData.targetPosition.z,
+            objectData.id
+        );
+        
+        // 计算最终放置高度（如果有物体，则叠放在其上）
+        const finalY = stackHeight > 0 ? 
+            stackHeight + objectData.size.height / 2 : 
+            objectData.size.height / 2;
+        
+        console.log(`Stack height: ${stackHeight}, Final Y position: ${finalY}`);
+        
+        // 更新目标位置的Y坐标
+        objectData.targetPosition.y = finalY;
+        
+        // 5. 移动到目标位置上方（更高的位置以避开可能的堆叠）
         await this.moveGripperTo({
             x: objectData.targetPosition.x,
-            y: objectData.targetPosition.y + 50,
+            y: Math.max(finalY + 50, 70), // 确保足够高
             z: objectData.targetPosition.z
         });
         
         // 6. 下降到目标位置
         await this.moveGripperTo({
             x: objectData.targetPosition.x,
-            y: objectData.targetPosition.y + 15,
+            y: finalY + 15,
             z: objectData.targetPosition.z
         });
         
@@ -348,7 +404,7 @@ class RobotGripper {
         // 8. 升起
         await this.moveGripperTo({
             x: objectData.targetPosition.x,
-            y: objectData.targetPosition.y + 50,
+            y: Math.max(finalY + 50, 70),
             z: objectData.targetPosition.z
         });
     }
@@ -455,7 +511,7 @@ class RobotGripper {
      */
     releaseObject(objectData) {
         return new Promise((resolve) => {
-            // 将物品放置到目标位置
+            // 将物品放置到目标位置（包含叠放高度）
             objectData.mesh.position.set(
                 objectData.targetPosition.x,
                 objectData.targetPosition.y,
@@ -473,6 +529,9 @@ class RobotGripper {
             
             // 更新指示灯
             this.updateGripperLight('working');
+            
+            console.log(`Object ${objectData.id} released at position:`, objectData.mesh.position);
+            console.log(`Stack level: Y = ${objectData.targetPosition.y}, Base = ${objectData.size.height / 2}`);
             
             // 模拟释放时间（支持暂停）
             const waitForRelease = () => {
