@@ -133,7 +133,7 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .left-panel {
@@ -175,6 +175,9 @@ body {
     align-items: center;
     flex-wrap: wrap;
     background: rgba(248, 250, 252, 0.8);
+    /* 允许tooltip显示在toolbar容器之外 */
+    overflow: visible;
+    position: relative;
 }
 
 .tool-group {
@@ -521,12 +524,16 @@ body {
     transform: translateX(-50%);
     background: #2d3748;
     color: white;
-    padding: 0.5rem;
-    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
     font-size: 0.8rem;
     white-space: nowrap;
-    z-index: 1000;
-    margin-bottom: 0.25rem;
+    z-index: 10000;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: max-content;
+    animation: fadeInTooltip 0.2s ease-out;
+    pointer-events: none;
 }
 
 [title]:hover::before {
@@ -535,9 +542,73 @@ body {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 4px solid transparent;
+    border: 5px solid transparent;
     border-top-color: #2d3748;
-    z-index: 1000;
+    z-index: 9999;
+    margin-bottom: 3px;
+    pointer-events: none;
+}
+
+/* 为toolbar中的按钮优化tooltip位置和对齐 */
+.toolbar [title]:hover::after {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 180px;
+    overflow: visible;
+    text-overflow: ellipsis;
+    margin-bottom: 8px;
+    animation: fadeInTooltipToolbar 0.2s ease-out;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.toolbar [title]:hover::before {
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 3px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* 当屏幕宽度较小时，进一步调整tooltip位置 */
+@media (max-width: 768px) {
+    .toolbar [title]:hover::after {
+        left: 50%;
+        max-width: 150px;
+        margin-bottom: 8px;
+        z-index: 10000;
+        overflow: visible;
+    }
+
+    .toolbar [title]:hover::before {
+        left: 50%;
+        margin-bottom: 3px;
+        z-index: 9999;
+    }
+}
+
+/* 通用tooltip动画效果 */
+@keyframes fadeInTooltip {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* toolbar按钮tooltip专用动画，确保位置计算正确 */
+@keyframes fadeInTooltipToolbar {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 /* Mode Panel Styles */
