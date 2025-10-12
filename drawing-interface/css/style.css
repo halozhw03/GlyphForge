@@ -822,16 +822,13 @@ body {
 }
 
 /* 确保画布容器保持正确比例 */
-#drawingContainer, #workspaceContainer {
+#workspaceContainer {
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    /* 默认比例，会被 JS 覆盖 */
-    aspect-ratio: 1.067; 
-    width: 100%;
-    max-width: 500px; /* 限制最大宽度 */
-    margin: 1rem auto;
+    /* JS会根据打印床尺寸覆盖这个值, 默认为1:1 */
+    aspect-ratio: 1 / 1;
 }
 
 .canvas-container canvas {

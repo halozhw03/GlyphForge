@@ -74,25 +74,13 @@ class WorkspaceCanvas {
                 const containerWidth = this.canvasElement.clientWidth || 400;
                 const containerHeight = this.canvasElement.clientHeight || 300;
                 
-                // 使用 bed 的长宽比（如果已获取），否则使用默认值
-                const aspectRatio = this.bedAspectRatio || (4/3);
-                let width, height;
-                
-                if (containerWidth / containerHeight > aspectRatio) {
-                    // 容器太宽，以高度为准
-                    height = containerHeight;
-                    width = height * aspectRatio;
-                } else {
-                    // 容器太高，以宽度为准
-                    width = containerWidth;
-                    height = width / aspectRatio;
-                }
+                // 直接使用容器的全部可用空间
+                const width = containerWidth;
+                const height = containerHeight;
                 
                 // 处理高DPR屏幕：内部像素=CSS*DPR，并缩放视图
                 const dpr = window.devicePixelRatio || 1;
                 this.dpr = dpr;
-                this.canvasElement.style.width = width + 'px';
-                this.canvasElement.style.height = height + 'px';
                 this.canvasElement.width = Math.round(width * dpr);
                 this.canvasElement.height = Math.round(height * dpr);
                 
