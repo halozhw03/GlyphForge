@@ -3,8 +3,9 @@
  * 扩展ThreeJSWorkArea以支持抓取机器人功能
  */
 class RobotGripper {
-    constructor(threeJSWorkArea) {
+    constructor(threeJSWorkArea, workspaceCanvas) {
         this.threeJSWorkArea = threeJSWorkArea;
+        this.workspaceCanvas = workspaceCanvas; // 保存 workspaceCanvas 实例
         this.scene = threeJSWorkArea.scene;
         this.isRobotMode = false;
         this.gripperArm = null;
@@ -26,98 +27,107 @@ class RobotGripper {
         };
         
         this.createGripper();
+        
+        // 监听模型加载完成事件
+        window.addEventListener('printerModelLoaded', () => {
+            console.log('RobotGripper: Printer model loaded event received');
+            // 如果当前是 Robot Mode，确保打印头可见并隐藏旧机械臂
+            if (this.isRobotMode) {
+                this.enableRobotMode();
+            }
+        });
     }
     
     /**
-     * 创建机械抓手
+     * 隐藏场景中所有旧机械臂的 Mesh
+     */
+    hideOldGripperMeshes() {
+        console.log('Hiding old gripper meshes...');
+        
+        // 旧机械臂的特征颜色
+        const gripperColors = [0x2c5282, 0x4a90e2, 0x666666, 0x333333, 0x00ff00];
+        let hiddenCount = 0;
+        
+        this.scene.traverse((obj) => {
+            // 查找没有名称且具有特定颜色的 Mesh
+            if (obj.isMesh && obj.name === '' && obj.material && obj.material.color) {
+                const color = obj.material.color.getHex();
+                if (gripperColors.includes(color)) {
+                    console.log(`Hiding old gripper mesh with color #${color.toString(16).padStart(6, '0')}`);
+                    obj.visible = false;
+                    hiddenCount++;
+                }
+            }
+        });
+        
+        console.log(`Hidden ${hiddenCount} old gripper meshes`);
+    }
+    
+    /**
+     * 创建机械抓手（现在使用打印头）
      */
     createGripper() {
-        // 创建机械臂组
-        this.gripperArm = new THREE.Group();
+        // 不再创建单独的机械臂，使用打印头作为机械臂
+        this.printHead = null; // 将在enableRobotMode中设置
         
-        // 机械臂底座
-        const baseGeometry = new THREE.CylinderGeometry(15, 20, 10, 16);
-        const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x2c5282 });
-        const base = new THREE.Mesh(baseGeometry, baseMaterial);
-        base.position.y = 5;
-        base.castShadow = true;
-        this.gripperArm.add(base);
+        // 初始化抓取状态
+        this.gripperState.position = { x: 0, y: 100, z: 0 };
         
-        // 机械臂主体
-        const armGeometry = new THREE.CylinderGeometry(8, 8, 60, 12);
-        const armMaterial = new THREE.MeshLambertMaterial({ color: 0x4a90e2 });
-        const arm = new THREE.Mesh(armGeometry, armMaterial);
-        arm.position.y = 40;
-        arm.castShadow = true;
-        this.gripperArm.add(arm);
-        
-        // 创建吸盘抓手
-        this.createSuctionGripper();
-        
-        // 设置初始位置
-        this.gripperArm.position.set(0, 0, 0);
-        this.scene.add(this.gripperArm);
-
-        // 默认隐藏机械抓手（drawing模式）
-        this.gripperArm.visible = false;
-
-        console.log('Robot gripper created and hidden by default');
-    }
-    
-    /**
-     * 创建吸盘抓手
-     */
-    createSuctionGripper() {
-        this.gripper = new THREE.Group();
-        
-        // 吸盘主体
-        const suctionGeometry = new THREE.CylinderGeometry(12, 8, 15, 16);
-        const suctionMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
-        const suction = new THREE.Mesh(suctionGeometry, suctionMaterial);
-        suction.castShadow = true;
-        this.gripper.add(suction);
-        
-        // 吸盘底部
-        const padGeometry = new THREE.CylinderGeometry(10, 10, 3, 16);
-        const padMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-        const pad = new THREE.Mesh(padGeometry, padMaterial);
-        pad.position.y = -9;
-        pad.castShadow = true;
-        this.gripper.add(pad);
-        
-        // 指示灯
-        const lightGeometry = new THREE.SphereGeometry(2, 8, 8);
-        const lightMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0x00ff00,
-            emissive: 0x002200
-        });
-        const light = new THREE.Mesh(lightGeometry, lightMaterial);
-        light.position.set(0, 5, 10);
-        this.gripper.add(light);
-        
-        // 连接到机械臂
-        this.gripper.position.y = 70;
-        this.gripperArm.add(this.gripper);
+        console.log('Robot gripper initialized to use print head');
     }
     
     /**
      * 切换到机器人模式
      */
     enableRobotMode() {
+        console.log('Enabling robot mode...');
         this.isRobotMode = true;
         
-        // 隐藏原来的打印头
-        if (this.threeJSWorkArea.printHead) {
-            this.threeJSWorkArea.printHead.visible = false;
+        // 隐藏旧的机械臂（如果存在）
+        if (this.gripperArm) {
+            console.log('Hiding old gripperArm');
+            this.gripperArm.visible = false;
+        }
+        if (this.gripper) {
+            console.log('Hiding old gripper');
+            this.gripper.visible = false;
         }
         
-        // 显示机械抓手
-        this.gripperArm.visible = true;
+        // 隐藏场景中所有旧机械臂的 Mesh
+        this.hideOldGripperMeshes();
+        
+        // 使用打印头作为机械臂
+        if (this.threeJSWorkArea.printHead) {
+            this.printHead = this.threeJSWorkArea.printHead;
+            
+            // 确保打印头及其所有父对象都可见
+            this.printHead.visible = true;
+            console.log('Print head set visible:', this.printHead.visible);
+            
+            // 遍历父对象确保都可见
+            let parent = this.printHead.parent;
+            let level = 0;
+            while (parent) {
+                console.log(`Setting parent ${level} visible:`, parent.type, parent.name);
+                parent.visible = true;
+                parent = parent.parent;
+                level++;
+            }
+            
+            // 遍历子对象确保都可见
+            this.printHead.traverse((child) => {
+                child.visible = true;
+            });
+            
+            console.log('Print head and all parents/children set visible');
+        } else {
+            console.error('Print head not found in threeJSWorkArea');
+        }
         
         // 更新指示灯
         this.updateGripperLight('ready');
         
-        console.log('Robot mode enabled');
+        console.log('Robot mode enabled, using print head as gripper');
     }
     
     /**
@@ -126,13 +136,19 @@ class RobotGripper {
     disableRobotMode() {
         this.isRobotMode = false;
         
-        // 显示原来的打印头
-        if (this.threeJSWorkArea.printHead) {
-            this.threeJSWorkArea.printHead.visible = true;
+        // 隐藏旧的机械臂（如果存在）
+        if (this.gripperArm) {
+            this.gripperArm.visible = false;
+        }
+        if (this.gripper) {
+            this.gripper.visible = false;
         }
         
-        // 隐藏机械抓手
-        this.gripperArm.visible = false;
+        // 保持打印头可见（Drawing Mode也需要）
+        if (this.threeJSWorkArea.printHead) {
+            this.threeJSWorkArea.printHead.visible = true;
+            console.log('Print head set visible in drawing mode:', this.threeJSWorkArea.printHead.visible);
+        }
         
         console.log('Robot mode disabled');
     }
@@ -174,7 +190,7 @@ class RobotGripper {
     }
 
     /**
-     * 创建3D物品
+     * 创建3D物品（使用与Drawing Mode相同的坐标系统）
      */
     create3DObject(objectData, workAreaOverride = null) {
         let geometry, material;
@@ -213,29 +229,32 @@ class RobotGripper {
         
         const mesh = new THREE.Mesh(geometry, material);
         
-        // 获取实际的3D工作区域尺寸
-        const workArea = workAreaOverride || this.currentWorkArea || this.threeJSWorkArea.workArea;
-        
-        // 获取画布尺寸（动态获取实际尺寸）
-        let canvasWidth = 400;  // 默认宽度
-        let canvasHeight = 300; // 默认高度
-        
-        // 尝试从WorkspaceCanvas获取实际尺寸
-        const workspaceCanvas = document.getElementById('workspaceCanvas');
-        if (workspaceCanvas) {
-            canvasWidth = workspaceCanvas.clientWidth || 400;
-            canvasHeight = workspaceCanvas.clientHeight || 300;
+        // 获取 bed 信息（与 Drawing Mode 一致）
+        if (!this.threeJSWorkArea.printBed) {
+            console.error("Cannot create object, print bed not found.");
+            return null;
         }
         
-        // 转换坐标系（从画布坐标到3D坐标）
-        // 将画布坐标映射到3D工作区域
-        const scaleX = workArea.width / canvasWidth;
-        const scaleZ = workArea.height / canvasHeight;
+        const bedBoundingBox = new THREE.Box3().setFromObject(this.threeJSWorkArea.printBed);
+        const bedSize = new THREE.Vector3();
+        bedBoundingBox.getSize(bedSize);
+        
+        // 使用传入的 workspaceCanvas 实例的属性
+        const canvasWidth = this.workspaceCanvas.canvasWidth;
+        const canvasHeight = this.workspaceCanvas.canvasHeight;
+        
+        // 转换坐标系（使用与 Drawing Mode 相同的方式）
+        const percentX = objectData.position.x / canvasWidth;
+        const percentY = objectData.position.y / canvasHeight;
+        
+        const convertedX = bedBoundingBox.min.x + percentX * bedSize.x;
+        const convertedZ = bedBoundingBox.min.z + percentY * bedSize.z;
+        const bedY = bedBoundingBox.max.y;
         
         mesh.position.set(
-            (objectData.position.x - canvasWidth/2) * scaleX,
-            objectSize.height/2, // 放在地面上
-            (objectData.position.y - canvasHeight/2) * scaleZ
+            convertedX,
+            bedY + objectSize.height/2, // 放在 bed 表面上
+            convertedZ
         );
         
         mesh.castShadow = true;
@@ -250,9 +269,9 @@ class RobotGripper {
             size: objectSize,
             originalPosition: { ...mesh.position },
             targetPosition: objectData.targetPosition ? {
-                x: (objectData.targetPosition.x - canvasWidth/2) * scaleX,
-                y: objectSize.height/2, // 初始高度，会在叠放时调整
-                z: (objectData.targetPosition.y - canvasHeight/2) * scaleZ
+                x: bedBoundingBox.min.x + (objectData.targetPosition.x / canvasWidth) * bedSize.x,
+                y: bedY + objectSize.height/2, // 初始高度，会在叠放时调整
+                z: bedBoundingBox.min.z + (objectData.targetPosition.y / canvasHeight) * bedSize.z
             } : null,
             isGripped: false
         };
@@ -367,6 +386,10 @@ class RobotGripper {
             z: objectData.originalPosition.z
         });
         
+        // 获取床面的 Y 坐标
+        const bedBoundingBox = new THREE.Box3().setFromObject(this.threeJSWorkArea.printBed);
+        const bedY = bedBoundingBox.max.y;
+        
         // 检测目标位置是否有物体，计算叠放高度
         const stackHeight = this.calculateStackHeight(
             objectData.targetPosition.x,
@@ -374,12 +397,14 @@ class RobotGripper {
             objectData.id
         );
         
-        // 计算最终放置高度（如果有物体，则叠放在其上）
+        // 计算最终放置高度
+        // 如果有物体叠放：stackHeight 是下面物体的顶部高度
+        // 如果没有物体：从床面开始
         const finalY = stackHeight > 0 ? 
             stackHeight + objectData.size.height / 2 : 
-            objectData.size.height / 2;
+            bedY + objectData.size.height / 2;
         
-        console.log(`Stack height: ${stackHeight}, Final Y position: ${finalY}`);
+        console.log(`Bed Y: ${bedY}, Stack height: ${stackHeight}, Final Y position: ${finalY}`);
         
         // 更新目标位置的Y坐标
         objectData.targetPosition.y = finalY;
@@ -410,7 +435,7 @@ class RobotGripper {
     }
     
     /**
-     * 移动机械手到指定位置
+     * 移动打印头到指定位置
      */
     moveGripperTo(targetPosition) {
         return new Promise((resolve) => {
@@ -436,14 +461,28 @@ class RobotGripper {
                 this.gripperState.position.y = startPosition.y + (targetPosition.y - startPosition.y) * easeProgress;
                 this.gripperState.position.z = startPosition.z + (targetPosition.z - startPosition.z) * easeProgress;
                 
-                // 更新机械手位置
-                this.gripperArm.position.set(
-                    this.gripperState.position.x,
-                    this.gripperState.position.y,
-                    this.gripperState.position.z
-                );
+                // 更新打印头位置（使用与 Drawing Mode 相同的方法）
+                if (this.printHead) {
+                    const bedBoundingBox = new THREE.Box3().setFromObject(this.threeJSWorkArea.printBed);
+                    const nozzleTipTargetY = this.gripperState.position.y;
+                    const originTargetY = nozzleTipTargetY - this.threeJSWorkArea.printHeadNozzleOffset;
+                    
+                    const targetWorldPosition = new THREE.Vector3(
+                        this.gripperState.position.x,
+                        originTargetY,
+                        this.gripperState.position.z
+                    );
+                    
+                    if (this.printHead.parent) {
+                        const parent = this.printHead.parent;
+                        const targetLocalPosition = parent.worldToLocal(targetWorldPosition.clone());
+                        this.printHead.position.copy(targetLocalPosition);
+                    } else {
+                        this.printHead.position.copy(targetWorldPosition);
+                    }
+                }
                 
-                // 如果正在抓取物品，让物品跟随机械手移动
+                // 如果正在抓取物品，让物品跟随打印头移动
                 if (this.gripperState.isGripping && this.gripperState.grippedObject) {
                     const grippedObject = this.gripperState.grippedObject;
                     grippedObject.mesh.position.set(
@@ -451,11 +490,6 @@ class RobotGripper {
                         this.gripperState.position.y - 15, // 减少间距，更紧密贴合
                         this.gripperState.position.z
                     );
-                }
-                
-                // 添加轻微的旋转动画（只在非暂停状态）
-                if (!this.isPaused) {
-                    this.gripper.rotation.y += 0.02;
                 }
                 
                 if (progress < 1) {
@@ -547,37 +581,69 @@ class RobotGripper {
     }
     
     /**
-     * 更新机械手指示灯
+     * 更新打印头指示灯
      */
     updateGripperLight(state) {
-        const light = this.gripper.children.find(child => child.geometry instanceof THREE.SphereGeometry);
-        if (!light) return;
+        if (!this.printHead) return;
         
-        switch (state) {
-            case 'ready':
-                light.material.color.setHex(0x00ff00);
-                light.material.emissive.setHex(0x002200);
-                break;
-            case 'working':
-                light.material.color.setHex(0x3182ce);
-                light.material.emissive.setHex(0x001122);
-                break;
-            case 'gripping':
-                light.material.color.setHex(0xffa500);
-                light.material.emissive.setHex(0x221100);
-                break;
-            case 'paused':
-                light.material.color.setHex(0xffff00);
-                light.material.emissive.setHex(0x222200);
-                break;
-            case 'completed':
-                light.material.color.setHex(0x0000ff);
-                light.material.emissive.setHex(0x000022);
-                break;
-            case 'error':
-                light.material.color.setHex(0xff0000);
-                light.material.emissive.setHex(0x220000);
-                break;
+        // 查找或创建独立的指示灯
+        let light = this.printHead.getObjectByName('gripperIndicatorLight');
+        
+        if (!light) {
+            const lightGeo = new THREE.SphereGeometry(2, 12, 12);
+            // 使用 MeshStandardMaterial 以支持光照
+            const lightMat = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x000000 });
+            light = new THREE.Mesh(lightGeo, lightMat);
+            light.name = 'gripperIndicatorLight';
+            
+            // 将指示灯放置在风扇附近
+            light.position.set(20, 10, -15); 
+            
+            this.printHead.add(light);
+            console.log('Created a new, independent indicator light for the gripper.');
+        }
+        
+        try {
+            switch (state) {
+                case 'ready':
+                    light.material.color.setHex(0x00ff00);
+                    if (light.material.emissive) {
+                        light.material.emissive.setHex(0x002200);
+                    }
+                    break;
+                case 'working':
+                    light.material.color.setHex(0x3182ce);
+                    if (light.material.emissive) {
+                        light.material.emissive.setHex(0x001122);
+                    }
+                    break;
+                case 'gripping':
+                    light.material.color.setHex(0xffa500);
+                    if (light.material.emissive) {
+                        light.material.emissive.setHex(0x221100);
+                    }
+                    break;
+                case 'paused':
+                    light.material.color.setHex(0xffff00);
+                    if (light.material.emissive) {
+                        light.material.emissive.setHex(0x222200);
+                    }
+                    break;
+                case 'completed':
+                    light.material.color.setHex(0x0000ff);
+                    if (light.material.emissive) {
+                        light.material.emissive.setHex(0x000022);
+                    }
+                    break;
+                case 'error':
+                    light.material.color.setHex(0xff0000);
+                    if (light.material.emissive) {
+                        light.material.emissive.setHex(0x220000);
+                    }
+                    break;
+            }
+        } catch (error) {
+            console.warn('Failed to update gripper light:', error);
         }
     }
     
@@ -622,8 +688,8 @@ class RobotGripper {
             grippedObject.isGripped = false;
         }
         
-        // 重置机械手位置
-        this.gripperArm.position.set(0, 0, 0);
+        // 重置打印头位置（如果需要的话）
+        // 注意：打印头的初始位置由模型决定，这里不重置
         this.gripperState.position = { x: 0, y: 100, z: 0 };
         this.gripperState.isGripping = false;
         this.gripperState.grippedObject = null;
@@ -657,13 +723,78 @@ class RobotGripper {
     destroy() {
         this.clearObjects();
         
-        if (this.gripperArm) {
-            this.scene.remove(this.gripperArm);
-            // 清理几何体和材质
-            this.gripperArm.traverse((child) => {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) child.material.dispose();
-            });
-        }
+        // 不再需要清理 gripperArm，因为我们使用打印头
+        // 打印头由 ThreeJSWorkArea 管理
     }
+    
+    /**
+     * 调试工具：打印场景中所有对象的信息
+     */
+    debugSceneObjects() {
+        console.log('=== Scene Debug Info ===');
+        console.log('Total children:', this.scene.children.length);
+        
+        this.scene.children.forEach((child, index) => {
+            console.log(`\nChild ${index}:`, {
+                type: child.type,
+                name: child.name,
+                visible: child.visible,
+                isGroup: child.isGroup,
+                isMesh: child.isMesh,
+                children: child.children ? child.children.length : 0
+            });
+            
+            // 如果是 Group，显示子对象
+            if (child.isGroup && child.children.length > 0) {
+                child.children.forEach((subChild, subIndex) => {
+                    console.log(`  Sub ${subIndex}:`, {
+                        type: subChild.type,
+                        name: subChild.name,
+                        visible: subChild.visible,
+                        geometry: subChild.geometry ? subChild.geometry.type : 'none',
+                        material: subChild.material ? 'yes' : 'no'
+                    });
+                });
+            }
+        });
+        
+        console.log('\n=== Print Head Info ===');
+        if (this.threeJSWorkArea.printHead) {
+            console.log('Print head found:', {
+                name: this.threeJSWorkArea.printHead.name,
+                visible: this.threeJSWorkArea.printHead.visible,
+                parent: this.threeJSWorkArea.printHead.parent ? this.threeJSWorkArea.printHead.parent.name : 'none',
+                children: this.threeJSWorkArea.printHead.children.length
+            });
+            
+            // 检查父对象可见性
+            let parent = this.threeJSWorkArea.printHead.parent;
+            let level = 0;
+            while (parent) {
+                console.log(`Parent ${level}:`, {
+                    type: parent.type,
+                    name: parent.name,
+                    visible: parent.visible
+                });
+                parent = parent.parent;
+                level++;
+            }
+        } else {
+            console.log('Print head not found!');
+        }
+        
+        console.log('======================');
+    }
+}
+
+// 导出调试函数到全局（用于浏览器控制台调试）
+if (typeof window !== 'undefined') {
+    window.debugRobotGripper = function() {
+        if (window.app && window.app.robotGripper) {
+            window.app.robotGripper.debugSceneObjects();
+        } else {
+            console.error('RobotGripper not found. Make sure app is initialized.');
+        }
+    };
+    console.log('Debug tool available: call debugRobotGripper() in console');
 }

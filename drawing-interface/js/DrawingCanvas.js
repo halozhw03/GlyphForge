@@ -46,6 +46,24 @@ class DrawingCanvas {
         this.lastTime = 0;
         this.velocityHistory = [];
         
+        // 监听 bed 长宽比事件，动态调整容器比例
+        window.addEventListener('bedAspectRatioCalculated', (e) => {
+            const bedAspectRatio = e.detail.aspectRatio;
+            console.log('DrawingCanvas: Bed aspect ratio received:', bedAspectRatio);
+            
+            // 设置容器的 aspect-ratio
+            const container = this.canvas.parentElement;
+            if (container && bedAspectRatio) {
+                container.style.aspectRatio = `${bedAspectRatio}`;
+                console.log('DrawingCanvas container aspect ratio set to:', bedAspectRatio);
+            }
+            
+            // 重新调整canvas大小
+            setTimeout(() => {
+                this.resize();
+            }, 100);
+        });
+        
         // 绑定事件
         this.bindEvents();
         

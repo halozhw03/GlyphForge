@@ -13,6 +13,8 @@
     
     <!-- Three.js for 3D simulation -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -162,7 +164,7 @@
 
 
                     <!-- Workspace Canvas -->
-                    <div class="canvas-container">
+                    <div id="workspaceContainer" class="canvas-container">
                         <canvas id="workspaceCanvas" resize></canvas>
                     </div>
 

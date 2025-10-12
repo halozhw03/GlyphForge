@@ -8,6 +8,7 @@ class ThreeJSWorkArea {
         this.isPaused = false;
         this.currentPathIndex = 0;
         this.currentPointIndex = 0;
+        this.printHeadNozzleOffset = 0;
         
         // 回调函数
         this.onSimulationComplete = null;
@@ -23,8 +24,7 @@ class ThreeJSWorkArea {
         this.controls = null;
         
         // 3D对象
-        this.workAreaMesh = null;
-        this.gridHelper = null;
+        this.printBed = null;
         this.printHead = null;
         this.pathLines = [];
         this.completedPaths = [];
@@ -120,10 +120,7 @@ class ThreeJSWorkArea {
         this.setupLighting();
         
         // 创建工作区域
-        this.createWorkArea();
-        
-        // 创建打印头
-        this.createPrintHead();
+        this.loadGLTFModel();
         
         // 处理窗口大小调整
         this.handleResize();
@@ -158,134 +155,111 @@ class ThreeJSWorkArea {
     }
 
     /**
-     * 创建3D工作区域
+     * 加载GLTF模型
      */
-    createWorkArea() {
-        // 工作平台
-        const platformGeometry = new THREE.BoxGeometry(
-            this.workArea.width, 
-            5, 
-            this.workArea.height
+    loadGLTFModel() {
+        const loader = new THREE.GLTFLoader();
+        const dracoLoader = new THREE.DRACOLoader();
+        dracoLoader.setDecoderPath('https://unpkg.com/three@0.128.0/examples/js/libs/draco/gltf/');
+        loader.setDRACOLoader(dracoLoader);
+
+        loader.load(
+            'printers/Ender_3.gltf',
+            (gltf) => {
+                const model = gltf.scene;
+                this.scene.add(model);
+
+                // Force an update of the world matrix for the model and its children before calculations
+                model.updateMatrixWorld(true);
+
+                // 遍历模型查找特定部件
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+
+                    // 根据名称识别打印头和打印床
+                    if (child.name === 'Hotbed_Surface') {
+                        this.printBed = child;
+                    }
+                    if (child.name === 'ASM_Printing_Head') { 
+                        this.printHead = child;
+                    }
+                });
+
+                if (this.printBed) {
+                    const bedBoundingBox = new THREE.Box3().setFromObject(this.printBed);
+                    const bedSize = new THREE.Vector3();
+                    bedBoundingBox.getSize(bedSize);
+                    if (bedSize.z > 0) { // avoid division by zero
+                        const aspectRatio = bedSize.x / bedSize.z;
+                        window.dispatchEvent(new CustomEvent('bedAspectRatioCalculated', { detail: { aspectRatio } }));
+                    }
+                }
+
+                if (!this.printBed) {
+                    console.error("Could not find print bed in the model. Please check the object names.");
+                }
+                if (!this.printHead) {
+                    console.error("Could not find print head in the model. Please check the object names.");
+                } else {
+                    // Calculate the offset from the object's origin to its lowest point.
+                    const boundingBox = new THREE.Box3().setFromObject(this.printHead);
+                    const originWorldPosition = new THREE.Vector3();
+                    this.printHead.getWorldPosition(originWorldPosition);
+                    
+                    this.printHeadNozzleOffset = boundingBox.min.y - originWorldPosition.y;
+                    
+                    // 强制设置打印头及其所有父对象和子对象为可见
+                    this.printHead.visible = true;
+                    
+                    // 设置所有子对象可见
+                    this.printHead.traverse((child) => {
+                        child.visible = true;
+                    });
+                    
+                    // 设置所有父对象可见
+                    let parent = this.printHead.parent;
+                    let parentLevel = 0;
+                    while (parent) {
+                        console.log(`Setting parent ${parentLevel} visible: ${parent.type} "${parent.name}"`);
+                        parent.visible = true;
+                        parent = parent.parent;
+                        parentLevel++;
+                    }
+                    
+                    console.log('Print head initialized and set visible:', this.printHead.visible);
+                    
+                    // 验证设置
+                    setTimeout(() => {
+                        console.log('Print head visibility after init:', this.printHead.visible);
+                    }, 100);
+                }
+                
+                // 模型加载后重新设置路径
+                if (this.originalPaths.length > 0) {
+                    this.setPaths(this.originalPaths);
+                }
+                
+                // 触发模型加载完成事件
+                window.dispatchEvent(new CustomEvent('printerModelLoaded', { 
+                    detail: { 
+                        printHead: this.printHead, 
+                        printBed: this.printBed 
+                    } 
+                }));
+                
+                // 强制保持打印头可见（定期检查）
+                this.ensurePrintHeadVisible();
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            },
+            (error) => {
+                console.error('An error happened while loading the GLTF model', error);
+            }
         );
-        const platformMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0xe0e0e0,
-            transparent: true,
-            opacity: 0.8
-        });
-        this.workAreaMesh = new THREE.Mesh(platformGeometry, platformMaterial);
-        this.workAreaMesh.position.y = -2.5;
-        this.workAreaMesh.receiveShadow = true;
-        this.scene.add(this.workAreaMesh);
-        
-        // 工作区域边框
-        const borderGeometry = new THREE.EdgesGeometry(platformGeometry);
-        const borderMaterial = new THREE.LineBasicMaterial({ color: 0x666666, linewidth: 2 });
-        const borderLines = new THREE.LineSegments(borderGeometry, borderMaterial);
-        borderLines.position.copy(this.workAreaMesh.position);
-        this.scene.add(borderLines);
-        
-        // 网格
-        this.createGrid();
-        
-        // 坐标轴
-        this.createAxes();
-    }
-
-    /**
-     * 创建网格
-     */
-    createGrid() {
-        const gridSize = this.workArea.width;
-        const divisions = this.workArea.width / 10; // 10mm间距
-        
-        this.gridHelper = new THREE.GridHelper(gridSize, divisions, 0xcccccc, 0xe0e0e0);
-        this.gridHelper.position.y = 0;
-        this.scene.add(this.gridHelper);
-        
-        // Z方向的网格
-        const gridHelperZ = new THREE.GridHelper(gridSize, divisions, 0xcccccc, 0xe0e0e0);
-        gridHelperZ.rotation.x = Math.PI / 2;
-        gridHelperZ.position.z = 0;
-        this.scene.add(gridHelperZ);
-    }
-
-    /**
-     * 创建坐标轴
-     */
-    createAxes() {
-        const axesHelper = new THREE.AxesHelper(150);
-        axesHelper.position.set(-this.workArea.width/2 + 20, 0, -this.workArea.height/2 + 20);
-        this.scene.add(axesHelper);
-        
-        // 添加坐标轴标签
-        this.createAxisLabels();
-    }
-
-    /**
-     * 创建坐标轴标签
-     */
-    createAxisLabels() {
-        const loader = new THREE.FontLoader();
-        // 由于字体加载是异步的，这里先用简单的几何体表示坐标轴
-        
-        // X轴标记 (红色)
-        const xMarkerGeometry = new THREE.ConeGeometry(3, 10, 8);
-        const xMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const xMarker = new THREE.Mesh(xMarkerGeometry, xMarkerMaterial);
-        xMarker.position.set(-this.workArea.width/2 + 50, 5, -this.workArea.height/2 + 20);
-        xMarker.rotation.z = -Math.PI / 2;
-        this.scene.add(xMarker);
-        
-        // Y轴标记 (绿色)
-        const yMarkerGeometry = new THREE.ConeGeometry(3, 10, 8);
-        const yMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const yMarker = new THREE.Mesh(yMarkerGeometry, yMarkerMaterial);
-        yMarker.position.set(-this.workArea.width/2 + 20, 35, -this.workArea.height/2 + 20);
-        this.scene.add(yMarker);
-        
-        // Z轴标记 (蓝色)
-        const zMarkerGeometry = new THREE.ConeGeometry(3, 10, 8);
-        const zMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-        const zMarker = new THREE.Mesh(zMarkerGeometry, zMarkerMaterial);
-        zMarker.position.set(-this.workArea.width/2 + 20, 5, -this.workArea.height/2 + 50);
-        zMarker.rotation.x = Math.PI / 2;
-        this.scene.add(zMarker);
-    }
-
-    /**
-     * 创建打印头
-     */
-    createPrintHead() {
-        const printHeadGroup = new THREE.Group();
-        
-        // 打印头主体
-        const headGeometry = new THREE.CylinderGeometry(8, 8, 20, 16);
-        const headMaterial = new THREE.MeshLambertMaterial({ color: 0xdc143c });
-        const head = new THREE.Mesh(headGeometry, headMaterial);
-        head.castShadow = true;
-        printHeadGroup.add(head);
-        
-        // 打印头喷嘴
-        const nozzleGeometry = new THREE.CylinderGeometry(2, 4, 8, 8);
-        const nozzleMaterial = new THREE.MeshLambertMaterial({ color: 0x8b0000 });
-        const nozzle = new THREE.Mesh(nozzleGeometry, nozzleMaterial);
-        nozzle.position.y = -14;
-        nozzle.castShadow = true;
-        printHeadGroup.add(nozzle);
-        
-        // 指示灯
-        const lightGeometry = new THREE.SphereGeometry(2, 8, 8);
-        const lightMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0x00ff00,
-            emissive: 0x004400
-        });
-        const light = new THREE.Mesh(lightGeometry, lightMaterial);
-        light.position.set(0, 8, 8);
-        printHeadGroup.add(light);
-        
-        this.printHead = printHeadGroup;
-        this.printHead.position.set(0, 30, 0);
-        this.scene.add(this.printHead);
     }
 
     /**
@@ -302,56 +276,33 @@ class ThreeJSWorkArea {
             id: pathData.id
         }));
 
-        // 获取左侧画布的实际尺寸
         const drawingCanvas = document.getElementById('drawingCanvas');
         const canvasWidth = drawingCanvas ? drawingCanvas.clientWidth : 400;
         const canvasHeight = drawingCanvas ? drawingCanvas.clientHeight : 400;
 
-        // 计算统一的缩放比例，保持形状比例不变
-        // 使用较小的缩放比例确保内容完全适配工作区域
-        const scaleX = this.workArea.width / canvasWidth;
-        const scaleY = this.workArea.height / canvasHeight;
-        const uniformScale = Math.min(scaleX, scaleY); // 使用统一缩放比例
+        if (!this.printBed) {
+            console.error("Cannot set paths, print bed not found.");
+            return;
+        }
 
-        console.log(`Canvas size: ${canvasWidth}x${canvasHeight}, Work area: ${this.workArea.width}x${this.workArea.height}`);
-        console.log(`Scale factors: X=${scaleX}, Y=${scaleY}, Uniform=${uniformScale}`);
+        const bedBoundingBox = new THREE.Box3().setFromObject(this.printBed);
+        const bedSize = new THREE.Vector3();
+        bedBoundingBox.getSize(bedSize);
 
-        // 边界检查和调整
         this.paths = this.originalPaths.map(pathData => {
-            // 转换路径点
             const convertedPoints = pathData.points.map(p => {
-                // 计算转换后的坐标
-                let convertedX = (p.x * uniformScale) - this.workArea.width/2;
-                let convertedZ = (p.y * uniformScale) - this.workArea.height/2;
+                const percentX = p.x / canvasWidth;
+                const percentY = p.y / canvasHeight;
 
-                // 边界检查和调整
-                const margin = 10; // 10mm 边界余量
-                const maxX = this.workArea.width / 2 - margin;
-                const minX = -this.workArea.width / 2 + margin;
-                const maxZ = this.workArea.height / 2 - margin;
-                const minZ = -this.workArea.height / 2 + margin;
-
-                // 调整X坐标
-                if (convertedX > maxX) {
-                    convertedX = maxX;
-                    console.warn(`Path point X coordinate (${convertedX}) exceeds work area boundary, clamped to ${maxX}`);
-                } else if (convertedX < minX) {
-                    convertedX = minX;
-                    console.warn(`Path point X coordinate (${convertedX}) exceeds work area boundary, clamped to ${minX}`);
-                }
-
-                // 调整Z坐标
-                if (convertedZ > maxZ) {
-                    convertedZ = maxZ;
-                    console.warn(`Path point Z coordinate (${convertedZ}) exceeds work area boundary, clamped to ${maxZ}`);
-                } else if (convertedZ < minZ) {
-                    convertedZ = minZ;
-                    console.warn(`Path point Z coordinate (${convertedZ}) exceeds work area boundary, clamped to ${minZ}`);
-                }
+                const convertedX = bedBoundingBox.min.x + percentX * bedSize.x;
+                const convertedZ = bedBoundingBox.min.z + percentY * bedSize.z;
+                
+                // 确保路径在打印床表面上
+                const bedY = bedBoundingBox.max.y;
 
                 return {
                     x: convertedX,
-                    y: 0,
+                    y: bedY,
                     z: convertedZ
                 };
             });
@@ -363,9 +314,7 @@ class ThreeJSWorkArea {
             };
         });
 
-        // 创建路径线条
         this.createPathLines();
-
         this.resetSimulation();
         this.updateEstimatedTime();
     }
@@ -377,7 +326,8 @@ class ThreeJSWorkArea {
         this.paths.forEach((pathData, index) => {
             if (pathData.points.length < 2) return;
             
-            const points = pathData.points.map(p => new THREE.Vector3(p.x, p.y + 1, p.z));
+            const bedYOffset = 0.2; // 在床上方0.2mm绘制以避免Z-fighting
+            const points = pathData.points.map(p => new THREE.Vector3(p.x, p.y + bedYOffset, p.z));
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             
             // 未执行的路径用虚线材质
@@ -450,28 +400,8 @@ class ThreeJSWorkArea {
      * 暂停模拟
      */
     pauseSimulation() {
-        this.isPaused = !this.isPaused;
-        this.updateStatus(this.isPaused ? 'Paused' : 'Simulating...');
-        
-        // 更新打印头指示灯颜色
-        try {
-            const light = this.printHead.children[2]; // 指示灯
-            if (light && light.material) {
-                if (this.isPaused) {
-                    light.material.color.setHex(0xffaa00);
-                    if (light.material.emissive) {
-                        light.material.emissive.setHex(0x442200);
-                    }
-                } else {
-                    light.material.color.setHex(0x00ff00);
-                    if (light.material.emissive) {
-                        light.material.emissive.setHex(0x004400);
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('ThreeJSWorkArea: Failed to update indicator light in pauseSimulation:', error);
-        }
+        this.isPaused = true;
+        this.updateStatus('Simulation paused');
     }
 
     /**
@@ -480,21 +410,8 @@ class ThreeJSWorkArea {
     stopSimulation() {
         this.isSimulating = false;
         this.isPaused = false;
+        this.updateStatus('Simulation stopped');
         this.resetSimulation();
-        this.updateStatus('Stopped');
-        
-        // 重置指示灯
-        try {
-            const light = this.printHead.children[2];
-            if (light && light.material) {
-                light.material.color.setHex(0x00ff00);
-                if (light.material.emissive) {
-                    light.material.emissive.setHex(0x004400);
-                }
-            }
-        } catch (error) {
-            console.warn('ThreeJSWorkArea: Failed to update indicator light in stopSimulation:', error);
-        }
     }
 
     /**
@@ -507,7 +424,11 @@ class ThreeJSWorkArea {
         this.progress = 0;
         
         // 重置打印头位置
-        this.printHead.position.set(0, 30, 0);
+        if (this.printHead) {
+            // We don't reset the head position to a fixed spot anymore,
+            // as its initial position is determined by the loaded model.
+            // It will move to the start of the first path when simulation starts.
+        }
         
         // 重置路径显示
         this.pathLines.forEach(line => {
@@ -522,15 +443,26 @@ class ThreeJSWorkArea {
      * 更新打印头位置
      */
     updatePrintHeadPosition() {
-        this.printHead.position.set(
+        if (!this.printHead) return;
+
+        // Target for the nozzle tip is the bed surface.
+        const nozzleTipTargetY = this.currentPosition.y;
+
+        // Calculate the required Y for the print head's origin.
+        const originTargetY = nozzleTipTargetY - this.printHeadNozzleOffset;
+
+        const targetWorldPosition = new THREE.Vector3(
             this.currentPosition.x,
-            this.currentPosition.y + 30,
+            originTargetY,
             this.currentPosition.z
         );
         
-        // 添加轻微的旋转动画效果
-        if (this.isSimulating && !this.isPaused) {
-            this.printHead.rotation.y += 0.01;
+        if (this.printHead.parent) {
+            const parent = this.printHead.parent;
+            const targetLocalPosition = parent.worldToLocal(targetWorldPosition.clone());
+            this.printHead.position.copy(targetLocalPosition);
+        } else {
+            this.printHead.position.copy(targetWorldPosition);
         }
     }
 
@@ -609,19 +541,12 @@ class ThreeJSWorkArea {
         this.updateStatus('Completed');
         this.updateProgress();
         
-        // 更新指示灯为完成状态
-        try {
-            const light = this.printHead.children[2];
-            if (light && light.material) {
-                light.material.color.setHex(0x0000ff);
-                // 只有当材质支持emissive属性时才设置
-                if (light.material.emissive) {
-                    light.material.emissive.setHex(0x000044);
-                }
+        // Change path color to yellow for better visibility
+        this.pathLines.forEach(line => {
+            if (line.userData.isCompleted) {
+                line.material.color.setHex(0xFFFF00); // Yellow
             }
-        } catch (error) {
-            console.warn('ThreeJSWorkArea: Failed to update indicator light:', error);
-        }
+        });
         
         // 通知主应用模拟完成
         console.log('ThreeJSWorkArea: onSimulationComplete callback exists?', !!this.onSimulationComplete);
@@ -729,8 +654,6 @@ class ThreeJSWorkArea {
             workWidthInput.addEventListener('change', (e) => {
                 const width = parseInt(e.target.value);
                 this.workArea.width = width;
-                this.recreateWorkArea();
-                this.robotGripper?.setWorkArea({ width });
                 // 重新设置路径以应用新的缩放比例
                 if (this.originalPaths.length > 0) {
                     this.setPaths(this.originalPaths);
@@ -742,35 +665,12 @@ class ThreeJSWorkArea {
             workHeightInput.addEventListener('change', (e) => {
                 const height = parseInt(e.target.value);
                 this.workArea.height = height;
-                this.recreateWorkArea();
-                this.robotGripper?.setWorkArea({ height });
                 // 重新设置路径以应用新的缩放比例
                 if (this.originalPaths.length > 0) {
                     this.setPaths(this.originalPaths);
                 }
             });
         }
-    }
-
-    /**
-     * 重新创建工作区域
-     */
-    recreateWorkArea() {
-        // 移除现有的工作区域对象
-        if (this.workAreaMesh) {
-            this.scene.remove(this.workAreaMesh);
-            this.workAreaMesh.geometry.dispose();
-            this.workAreaMesh.material.dispose();
-        }
-        
-        if (this.gridHelper) {
-            this.scene.remove(this.gridHelper);
-            this.gridHelper.geometry.dispose();
-            this.gridHelper.material.dispose();
-        }
-        
-        // 重新创建工作区域
-        this.createWorkArea();
     }
 
     /**
@@ -821,10 +721,23 @@ class ThreeJSWorkArea {
     }
 
     /**
+     * 确保打印头始终可见
+     */
+    ensurePrintHeadVisible() {
+        if (this.printHead && this.printHead.visible === false) {
+            console.log('Print head visibility was false, resetting to true');
+            this.printHead.visible = true;
+        }
+    }
+    
+    /**
      * 动画循环
      */
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
+        
+        // 确保打印头可见（每帧检查）
+        this.ensurePrintHeadVisible();
         
         // 更新控制器（如果可用）
         if (this.controls) {

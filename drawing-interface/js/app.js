@@ -53,9 +53,11 @@ class MechanicalArmSimulator {
             // 初始化3D工作区域
             this.threeJSWorkArea = new ThreeJSWorkArea('threejsCanvas');
             
-            // 初始化机器人抓手
-            this.robotGripper = new RobotGripper(this.threeJSWorkArea);
-            console.log('RobotGripper initialized:', this.robotGripper);
+            // 机器人抓取
+            if (this.threeJSWorkArea && this.workspaceCanvas) {
+                this.robotGripper = new RobotGripper(this.threeJSWorkArea, this.workspaceCanvas);
+                console.log('RobotGripper initialized');
+            }
             
             // 初始化图片追踪器
             this.imageTracer = new ImageTracer();
@@ -82,6 +84,15 @@ class MechanicalArmSimulator {
             
             // 设置默认状态
             this.setupDefaultState();
+            
+            // 监听模型加载完成，确保打印头可见
+            window.addEventListener('printerModelLoaded', () => {
+                console.log('App: Printer model loaded, ensuring print head visibility');
+                if (this.threeJSWorkArea.printHead) {
+                    this.threeJSWorkArea.printHead.visible = true;
+                    console.log('App: Print head visibility ensured:', this.threeJSWorkArea.printHead.visible);
+                }
+            });
             
             this.isInitialized = true;
             console.log('Initialization completed successfully!');
@@ -653,7 +664,7 @@ class MechanicalArmSimulator {
         const modeToggleButton = document.getElementById('modeToggle');
         if (modeToggleButton) {
             modeToggleButton.innerHTML = '<i class="fas fa-pencil-alt"></i> Drawing Mode';
-            // 保持与“Robot Mode”一致的白色背景，不再添加填充色样式
+            // 保持与"Robot Mode"一致的白色背景，不再添加填充色样式
         }
         
         // 隐藏绘画面板，显示机器人面板
@@ -663,9 +674,20 @@ class MechanicalArmSimulator {
         if (drawingPanel) drawingPanel.classList.add('hidden');
         if (robotPanel) robotPanel.classList.remove('hidden');
         
-        // 启用机器人模式
-        if (this.robotGripper) {
-            this.robotGripper.enableRobotMode();
+        // 启用机器人抓取器
+        this.robotGripper.enableRobotMode();
+
+        // 强制重绘工作区画布
+        if (this.workspaceCanvas) {
+            setTimeout(() => {
+                this.workspaceCanvas.resize();
+            }, 50); // 短暂延迟确保容器已显示
+        }
+        
+        // 确保打印头可见
+        if (this.threeJSWorkArea.printHead) {
+            this.threeJSWorkArea.printHead.visible = true;
+            console.log('Robot mode: Print head set visible');
         }
         
         // 设置默认机器人工具
@@ -700,9 +722,20 @@ class MechanicalArmSimulator {
         if (drawingPanel) drawingPanel.classList.remove('hidden');
         if (robotPanel) robotPanel.classList.add('hidden');
         
-        // 禁用机器人模式
-        if (this.robotGripper) {
-            this.robotGripper.disableRobotMode();
+        // 禁用机器人抓取器
+        this.robotGripper.disableRobotMode();
+        
+        // 强制重绘绘画画布
+        if (this.drawingCanvas) {
+            setTimeout(() => {
+                this.drawingCanvas.resize();
+            }, 50); // 短暂延迟确保容器已显示
+        }
+
+        // 确保打印头可见（Drawing Mode 也使用打印头）
+        if (this.threeJSWorkArea && this.threeJSWorkArea.printHead) {
+            this.threeJSWorkArea.printHead.visible = true;
+            console.log('Drawing mode: Print head set visible');
         }
         
         console.log('Switched to drawing mode');
@@ -1811,3 +1844,30 @@ const app = new MechanicalArmSimulator();
 // 导出到全局作用域（用于调试）
 window.MechanicalArmSimulator = MechanicalArmSimulator;
 window.app = app;
+
+// 导出调试函数
+window.debugRobotGripper = function() {
+    if (window.app && window.app.robotGripper) {
+        window.app.robotGripper.debugSceneObjects();
+    } else {
+        console.error('RobotGripper not found. Make sure app is initialized.');
+        console.log('App:', window.app);
+        console.log('RobotGripper:', window.app?.robotGripper);
+    }
+};
+
+window.debugScene = function() {
+    if (window.app && window.app.threeJSWorkArea) {
+        const scene = window.app.threeJSWorkArea.scene;
+        console.log('=== Scene Children ===');
+        scene.children.forEach((child, i) => {
+            console.log(`${i}:`, child.type, child.name, 'visible:', child.visible);
+        });
+        console.log('Print Head:', window.app.threeJSWorkArea.printHead);
+        console.log('Print Bed:', window.app.threeJSWorkArea.printBed);
+    }
+};
+
+console.log('Debug functions available:');
+console.log('  debugRobotGripper() - Debug robot gripper and scene');
+console.log('  debugScene() - Quick scene overview');

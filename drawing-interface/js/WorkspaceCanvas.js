@@ -15,10 +15,36 @@ class WorkspaceCanvas {
         this.isPaperInitialized = false;
         this.useFallback = true; // 默认使用备用系统，直到Paper.js成功初始化
         this.paperScope = null;
+        
+        // Bed 长宽比（默认值，会在收到事件后更新）
+        this.bedAspectRatio = null;
 
         if (!this.canvasElement) {
             throw new Error(`Canvas element with id '${canvasId}' not found`);
         }
+
+        // 监听 bed 长宽比事件，动态调整容器比例
+        window.addEventListener('bedAspectRatioCalculated', (e) => {
+            this.bedAspectRatio = e.detail.aspectRatio;
+            console.log('WorkspaceCanvas: Bed aspect ratio received:', this.bedAspectRatio);
+            
+            // 设置容器的 aspect-ratio
+            const container = this.canvasElement.parentElement;
+            if (container && this.bedAspectRatio) {
+                container.style.aspectRatio = `${this.bedAspectRatio}`;
+                console.log('Container aspect ratio set to:', this.bedAspectRatio);
+            }
+            
+            // 重新调整canvas大小
+            setTimeout(() => {
+                if (this.isPaperInitialized) {
+                    this.resize();
+                } else {
+                    this.setupCanvasSize();
+                    this.drawBasicGrid();
+                }
+            }, 100);
+        });
 
         // 初始化工具显示
         this.updateToolDisplay();
@@ -48,8 +74,8 @@ class WorkspaceCanvas {
                 const containerWidth = this.canvasElement.clientWidth || 400;
                 const containerHeight = this.canvasElement.clientHeight || 300;
                 
-                // 设置画布的实际尺寸，保持4:3比例
-                const aspectRatio = 4/3;
+                // 使用 bed 的长宽比（如果已获取），否则使用默认值
+                const aspectRatio = this.bedAspectRatio || (4/3);
                 let width, height;
                 
                 if (containerWidth / containerHeight > aspectRatio) {
@@ -129,31 +155,16 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 设置画布尺寸 - 与DrawingCanvas保持一致
+     * 设置画布尺寸 - 简化版本，直接使用容器尺寸（与 DrawingCanvas 一致）
      */
     setupCanvasSize() {
-        const containerWidth = this.canvasElement.clientWidth || 400;
-        const containerHeight = this.canvasElement.clientHeight || 300;
+        // 直接使用容器的客户端尺寸（CSS会处理aspect ratio）
+        const width = this.canvasElement.clientWidth || 400;
+        const height = this.canvasElement.clientHeight || 300;
 
-        // 保持4:3比例 - 与DrawingCanvas一致
-        const aspectRatio = 4/3;
-        let width, height;
-
-        if (containerWidth / containerHeight > aspectRatio) {
-            height = containerHeight;
-            width = height * aspectRatio;
-        } else {
-            width = containerWidth;
-            height = width / aspectRatio;
-        }
-
-        // 处理高DPR屏幕：内部像素=CSS*DPR，并缩放视图
+        // 处理高DPR屏幕
         const dpr = window.devicePixelRatio || 1;
         this.dpr = dpr;
-
-        // 设置canvas元素的CSS大小（逻辑像素）
-        this.canvasElement.style.width = width + 'px';
-        this.canvasElement.style.height = height + 'px';
 
         // 设置canvas内部像素大小（物理像素）
         this.canvasElement.width = Math.round(width * dpr);
@@ -281,15 +292,8 @@ class WorkspaceCanvas {
     getAccurateMousePosition(e) {
         const rect = this.canvasElement.getBoundingClientRect();
         
-        // 使用CSS大小作为坐标基准，内部像素由DPR管理
-        const cssWidth = this.canvasWidth || rect.width;
-        const cssHeight = this.canvasHeight || rect.height;
-        
-        const scaleX = cssWidth / rect.width;
-        const scaleY = cssHeight / rect.height;
-        
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
         
         return { x, y };
     }
@@ -1464,45 +1468,21 @@ class WorkspaceCanvas {
      */
     resize() {
         if (this.paperScope && this.paperScope.view) {
-            // 获取容器尺寸并保持4:3比例（CSS尺寸）
-            const containerWidth = this.canvasElement.clientWidth || 400;
-            const containerHeight = this.canvasElement.clientHeight || 300;
-            const aspectRatio = 4/3;
-            let width, height;
-            if (containerWidth / containerHeight > aspectRatio) {
-                height = containerHeight;
-                width = height * aspectRatio;
-            } else {
-                width = containerWidth;
-                height = width / aspectRatio;
-            }
-            
-            // 处理高DPR：CSS尺寸与内部像素分离
-            const dpr = window.devicePixelRatio || this.dpr || 1;
-            this.dpr = dpr;
-            this.canvasElement.style.width = width + 'px';
-            this.canvasElement.style.height = height + 'px';
-            this.canvasElement.width = Math.round(width * dpr);
-            this.canvasElement.height = Math.round(height * dpr);
+            // 简化版本：直接使用容器的客户端尺寸（与 DrawingCanvas 一致）
+            const width = this.canvasElement.clientWidth;
+            const height = this.canvasElement.clientHeight;
             
             // 同步CSS逻辑尺寸，供命中测试与坐标换算使用
             this.canvasWidth = width;
             this.canvasHeight = height;
             
-            // 重新应用2D上下文的DPR缩放
-            const ctx = this.canvasElement.getContext('2d');
-            if (ctx && ctx.setTransform) {
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            }
-            
             // 更新Paper.js视图尺寸（使用CSS逻辑尺寸）
             this.paperScope.view.viewSize = new this.paperScope.Size(width, height);
             
-            // 重新绘制边界
+            // 重新绘制边界和所有物品
             this.paperScope.project.clear();
             this.drawWorkAreaBoundary();
             
-            // 重新绘制所有物品
             this.objects.forEach(obj => {
                 if (obj.visual) obj.visual.remove();
                 if (obj.targetMarker) obj.targetMarker.remove();
@@ -1514,6 +1494,8 @@ class WorkspaceCanvas {
                     this.drawConnectionLine(obj);
                 }
             });
+
+            this.paperScope.view.draw();
         }
     }
     
