@@ -72,11 +72,22 @@ class ThreeJSWorkArea {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0xf5f5f5);
         
-        // 创建相机 - 固定位置
+        // 创建正交相机用于轴侧图视角
         const aspect = this.container.clientWidth / this.container.clientHeight;
-        this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+        const viewSize = 300; // 视图大小
+        this.camera = new THREE.OrthographicCamera(
+            -viewSize * aspect / 2,  // left
+            viewSize * aspect / 2,   // right
+            viewSize / 2,            // top
+            -viewSize / 2,           // bottom
+            0.1,                     // near
+            2000                     // far
+        );
+        
+        // 设置轴侧图视角（等轴测图）- 从右上前方观察
         this.camera.position.set(300, 250, 300);
         this.camera.lookAt(0, 0, 0);
+        this.camera.up.set(0, 1, 0);
         
         // 创建渲染器
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -694,8 +705,13 @@ class ThreeJSWorkArea {
         console.log('Updating canvas size:', width, 'x', height);
         console.log('New aspect ratio:', width / height);
         
-        // 更新相机宽高比
-        this.camera.aspect = width / height;
+        // 更新正交相机的视口
+        const aspect = width / height;
+        const viewSize = 300;
+        this.camera.left = -viewSize * aspect / 2;
+        this.camera.right = viewSize * aspect / 2;
+        this.camera.top = viewSize / 2;
+        this.camera.bottom = -viewSize / 2;
         this.camera.updateProjectionMatrix();
         
         // 更新渲染器大小

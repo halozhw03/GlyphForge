@@ -126,9 +126,17 @@ class SimpleOrbitControls {
         // 限制角度范围
         this.spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this.spherical.phi));
         
-        // 应用缩放
-        this.spherical.radius *= this.scale;
-        this.spherical.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.spherical.radius));
+        // 处理缩放 - 区分透视相机和正交相机
+        if (this.camera.isPerspectiveCamera) {
+            // 透视相机：调整距离
+            this.spherical.radius *= this.scale;
+            this.spherical.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.spherical.radius));
+        } else if (this.camera.isOrthographicCamera) {
+            // 正交相机：调整缩放比例
+            this.camera.zoom *= (1 / this.scale);
+            this.camera.zoom = Math.max(0.1, Math.min(10, this.camera.zoom)); // 限制缩放范围
+            this.camera.updateProjectionMatrix();
+        }
         
         // 转换回笛卡尔坐标
         offset.setFromSpherical(this.spherical);
