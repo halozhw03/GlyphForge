@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GlyphForge</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/minimal.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1">
+    <link rel="stylesheet" href="css/minimal.css?v=1.1">
     
     <!-- Paper.js -->
     <script src="https://unpkg.com/paper@0.12.17/dist/paper-full.min.js"></script>
@@ -50,50 +50,46 @@
                 <div id="drawingModePanel" class="mode-panel">
                     <div class="panel-header">
                         <h3><i class="fas fa-pencil-alt"></i> Drawing Mode</h3>
-                    </div>
-                    
-                    <!-- Drawing Tools -->
-                    <div class="toolbar">
-                        <div class="tool-group drawing-tools">
-                            <button id="freehandTool" class="tool-btn active" data-tool="freehand" title="Freehand Drawing">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                            <button id="lineTool" class="tool-btn" data-tool="line" title="Polyline Tool">
-                                <i class="fas fa-draw-polygon"></i>
-                            </button>
-                            <button id="bezierTool" class="tool-btn" data-tool="bezier" title="Bezier Curve">
-                                <i class="fas fa-bezier-curve"></i>
-                            </button>
-                            <div class="shape-tool-container">
-                                <button id="shapeTool" class="tool-btn" data-tool="shape" title="Preset Shapes">
-                                    <i class="fas fa-shapes"></i>
+                        <div class="panel-actions">
+                            <div class="tool-group drawing-tools">
+                                <button id="freehandTool" class="tool-btn" data-tool="freehand" title="Freehand Drawing">
+                                    <i class="fas fa-pencil-alt"></i>
                                 </button>
-                                <div id="shapeSelector" class="shape-selector hidden">
-                                    <button class="shape-btn" data-shape="circle" title="Circle">
-                                        <i class="fas fa-circle"></i>
+                                <button id="lineTool" class="tool-btn" data-tool="line" title="Polyline Tool">
+                                    <i class="fas fa-draw-polygon"></i>
+                                </button>
+                                <button id="bezierTool" class="tool-btn" data-tool="bezier" title="Bezier Curve">
+                                    <i class="fas fa-bezier-curve"></i>
+                                </button>
+                                <div class="shape-tool-container">
+                                    <button id="shapeTool" class="tool-btn" data-tool="shape" title="Preset Shapes">
+                                        <i class="fas fa-shapes"></i>
                                     </button>
-                                    <button class="shape-btn" data-shape="star" title="Star">
-                                        <i class="fas fa-star"></i>
-                                    </button>
-                                    <button class="shape-btn" data-shape="heart" title="Heart">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
+                                    <div id="shapeSelector" class="shape-selector hidden">
+                                        <button class="shape-btn" data-shape="circle" title="Circle">
+                                            <i class="fas fa-circle"></i>
+                                        </button>
+                                        <button class="shape-btn" data-shape="star" title="Star">
+                                            <i class="fas fa-star"></i>
+                                        </button>
+                                        <button class="shape-btn" data-shape="heart" title="Heart">
+                                            <i class="fas fa-heart"></i>
+                                        </button>
+                                    </div>
                                 </div>
+                                <button id="imageTraceTool" class="tool-btn" data-tool="image-trace" title="Image Trace">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <button id="dynamicTool" class="tool-btn" data-tool="dynamic" title="Dynamic Art Mode">
+                                    <i class="fas fa-paint-brush"></i>
+                                </button>
                             </div>
-                            <button id="imageTraceTool" class="tool-btn" data-tool="image-trace" title="Image Trace">
-                                <i class="fas fa-image"></i>
-                            </button>
-                            <button id="dynamicTool" class="tool-btn" data-tool="dynamic" title="Dynamic Art Mode">
-                                <i class="fas fa-paint-brush"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="toolbar-divider"></div>
-                        
-                        <div class="tool-group delete-tools">
-                            <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete Path">
-                                <i class="fas fa-eraser"></i>
-                            </button>
+                            <div class="toolbar-divider"></div>
+                            <div class="tool-group delete-tools">
+                                <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete Path">
+                                    <i class="fas fa-eraser"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -121,44 +117,40 @@
                 <div id="robotModePanel" class="mode-panel hidden">
                     <div class="panel-header">
                         <h3><i class="fas fa-robot"></i> Robot Mode</h3>
-                    </div>
-                    
-                    <!-- Object Tools -->
-                    <div class="toolbar">
-                        <div class="tool-group object-tools">
-                            <button id="placeObjectTool" class="tool-btn active" data-tool="place-object" title="Place Object">
-                                <i class="fas fa-cube"></i>
-                            </button>
-                            <button id="setTargetTool" class="tool-btn" data-tool="set-target" title="Set Target Position">
-                                <i class="fas fa-bullseye"></i>
-                            </button>
-                            <div class="object-selector-tool-container">
-                                <button id="selectObjectTool" class="tool-btn" title="Select Object Type">
-                                    <i class="fas fa-shapes"></i>
+                        <div class="panel-actions">
+                            <div class="tool-group object-tools">
+                                <button id="placeObjectTool" class="tool-btn" data-tool="place-object" title="Place Object">
+                                    <i class="fas fa-cube"></i>
                                 </button>
-                                <div id="objectShapeSelector" class="object-shape-selector hidden">
-                                    <button class="object-shape-btn" data-object="cube" title="Cube">
-                                        <i class="fas fa-cube"></i>
+                                <button id="setTargetTool" class="tool-btn" data-tool="set-target" title="Set Target Position">
+                                    <i class="fas fa-bullseye"></i>
+                                </button>
+                                <div class="object-selector-tool-container">
+                                    <button id="selectObjectTool" class="tool-btn" title="Select Object Type">
+                                        <i class="fas fa-shapes"></i>
                                     </button>
-                                    <button class="object-shape-btn" data-object="sphere" title="Sphere">
-                                        <i class="fas fa-circle"></i>
-                                    </button>
-                                    <button class="object-shape-btn" data-object="cylinder" title="Cylinder">
-                                        <i class="fas fa-circle-notch"></i>
-                                    </button>
-                                    <button class="object-shape-btn" data-object="box" title="Box">
-                                        <i class="fas fa-square"></i>
-                                    </button>
+                                    <div id="objectShapeSelector" class="object-shape-selector hidden">
+                                        <button class="object-shape-btn" data-object="cube" title="Cube">
+                                            <i class="fas fa-cube"></i>
+                                        </button>
+                                        <button class="object-shape-btn" data-object="sphere" title="Sphere">
+                                            <i class="fas fa-circle"></i>
+                                        </button>
+                                        <button class="object-shape-btn" data-object="cylinder" title="Cylinder">
+                                            <i class="fas fa-circle-notch"></i>
+                                        </button>
+                                        <button class="object-shape-btn" data-object="box" title="Box">
+                                            <i class="fas fa-square"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="toolbar-divider"></div>
-                        
-                        <div class="tool-group delete-tools">
-                            <button id="deleteObjectTool" class="tool-btn" data-tool="delete-object" title="Delete Object">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="toolbar-divider"></div>
+                            <div class="tool-group delete-tools">
+                                <button id="deleteObjectTool" class="tool-btn" data-tool="delete-object" title="Delete Object">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -190,12 +182,7 @@
             <div class="right-panel">
                 <div class="panel-header">
                     <h3><i class="fas fa-cube"></i> 3D Work Area</h3>
-                </div>
-
-                <!-- Simulation Controls -->
-                <div class="sim-controls">
-                    <!-- Sim Toolbar (match left toolbar style) -->
-                    <div class="toolbar">
+                    <div class="panel-actions">
                         <div class="tool-group sim-tools">
                             <button id="realPrintToggle" class="tool-btn" title="Real Print">
                                 <i class="fas fa-print"></i>
@@ -208,6 +195,10 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Simulation Controls -->
+                <div class="sim-controls">
 
                     <!-- Real Print Stepper -->
                     <div class="control-group printer-controls">

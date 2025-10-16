@@ -98,9 +98,15 @@ html, body {
 }
 
 
-.tool-btn.active {
+.tool-btn.active,
+.tool-btn:active {
   background: var(--accent);
   border-color: var(--accent);
+  color: #fff;
+}
+
+.tool-btn.active i,
+.tool-btn:active i {
   color: #fff;
 }
 
@@ -121,6 +127,10 @@ html, body {
 .shape-btn.active, .object-shape-btn.active {
   background: var(--accent);
   border-color: var(--accent);
+  color: #fff;
+}
+
+.shape-btn.active i, .object-shape-btn.active i {
   color: #fff;
 }
 
@@ -161,6 +171,10 @@ html, body {
   box-shadow: none;
   border-radius: 0;
 }
+
+/* 标题栏动作区与分隔线的极简主题适配 */
+.panel-actions { gap: 0.5rem; }
+.panel-header-divider { background: var(--border); }
 
 /* Remove background inner effects inherited */
 body {

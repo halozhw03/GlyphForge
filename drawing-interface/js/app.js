@@ -691,7 +691,12 @@ class MechanicalArmSimulator {
         }
         
         // 设置默认机器人工具
-        this.selectRobotTool('place-object');
+        // 默认将工作区工具设置为 place-object，但不高亮任何按钮
+        if (this.workspaceCanvas) {
+            this.workspaceCanvas.setTool('place-object');
+        }
+        // 确保进入机器人模式时，工具按钮无激活样式
+        document.querySelectorAll('#robotModePanel .tool-btn').forEach(btn => btn.classList.remove('active'));
         
         console.log('Switched to robot mode');
     }
@@ -1112,8 +1117,10 @@ class MechanicalArmSimulator {
      * 设置默认状态
      */
     setupDefaultState() {
-        // 选择默认工具
-        this.selectTool('freehand');
+        // 默认工具保持为 freehand，但不高亮任何按钮
+        if (this.drawingCanvas) {
+            this.drawingCanvas.setTool('freehand');
+        }
         
         // 设置默认形状并激活第一个形状按钮
         this.drawingCanvas.setCurrentShape('circle');

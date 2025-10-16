@@ -152,6 +152,11 @@ body {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     background: rgba(102, 126, 234, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    overflow: visible; /* 允许标题栏里的下拉选择溢出显示 */
 }
 
 .panel-header h3 {
@@ -165,6 +170,20 @@ body {
 
 .panel-header i {
     color: #667eea;
+}
+
+/* 标题栏右侧动作区与分隔线 */
+.panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.panel-header-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.15);
+    margin-left: 0.75rem;
 }
 
 /* Toolbar */
@@ -223,9 +242,15 @@ body {
     background: #f7fafc;
 }
 
-.tool-btn.active {
+.tool-btn.active,
+.tool-btn:active {
     background: #667eea;
     border-color: #667eea;
+    color: white;
+}
+
+.tool-btn.active i,
+.tool-btn:active i {
     color: white;
 }
 
@@ -586,6 +611,10 @@ body {
     color: white;
 }
 
+.shape-btn.active i {
+    color: white;
+}
+
 
 /* Tooltip Styles */
 [title] {
@@ -809,6 +838,10 @@ body {
 .object-shape-btn.active {
     background: #667eea;
     border-color: #667eea;
+    color: white;
+}
+
+.object-shape-btn.active i {
     color: white;
 }
 
