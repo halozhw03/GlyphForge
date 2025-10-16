@@ -28,5 +28,8 @@
   "bugs": {
     "url": "https://github.com/machineagency/p5.fab/issues"
   },
-  "homepage": "https://github.com/machineagency/p5.fab#readme"
+  "homepage": "https://github.com/machineagency/p5.fab#readme",
+  "dependencies": {
+    "roughjs": "^4.6.6"
+  }
 }
