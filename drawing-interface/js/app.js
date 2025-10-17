@@ -437,8 +437,10 @@ class MechanicalArmSimulator {
             const result = await this.imageTracer.processImage(file);
             
             if (result.paths && result.paths.length > 0) {
-                // 将追踪结果转换为Paper.js路径并添加到画布
-                this.addTracedPaths(result.paths, result.width, result.height);
+                // 使用DrawingCanvas的方法添加追踪的路径
+                if (this.drawingCanvas) {
+                    this.drawingCanvas.addTracedPaths(result.paths, result.width, result.height);
+                }
                 
                 this.showNotification(
                     `Image traced successfully! Found ${result.paths.length} paths.`, 
@@ -463,96 +465,6 @@ class MechanicalArmSimulator {
         }
     }
     
-    /**
-     * 将追踪的路径添加到画布
-     */
-    addTracedPaths(tracedPaths, imageWidth, imageHeight) {
-        if (!this.drawingCanvas) return;
-        
-        // 获取画布尺寸
-        const canvasBounds = paper.view.bounds;
-        const canvasWidth = canvasBounds.width;
-        const canvasHeight = canvasBounds.height;
-        
-        // 计算缩放比例，使图片适应画布中心区域（留一些边距）
-        const margin = 50;
-        const availableWidth = canvasWidth - 2 * margin;
-        const availableHeight = canvasHeight - 2 * margin;
-        
-        const scaleX = availableWidth / imageWidth;
-        const scaleY = availableHeight / imageHeight;
-        const scale = Math.min(scaleX, scaleY);
-        
-        // 计算居中偏移
-        const scaledWidth = imageWidth * scale;
-        const scaledHeight = imageHeight * scale;
-        const offsetX = (canvasWidth - scaledWidth) / 2;
-        const offsetY = (canvasHeight - scaledHeight) / 2;
-        
-        // 转换每个路径
-        for (const tracedPath of tracedPaths) {
-            if (tracedPath.length < 2) continue;
-            
-            // 创建Paper.js路径
-            const path = new paper.Path();
-            path.strokeColor = this.drawingCanvas.strokeColor || '#2563eb';
-            path.strokeWidth = this.drawingCanvas.strokeWidth || 2;
-            path.fillColor = null;
-            
-            // 添加路径点
-            for (let i = 0; i < tracedPath.length; i++) {
-                const [x, y] = tracedPath[i];
-                
-                // 应用缩放和偏移
-                const scaledX = x * scale + offsetX;
-                const scaledY = y * scale + offsetY;
-                
-                if (i === 0) {
-                    path.moveTo(new paper.Point(scaledX, scaledY));
-                } else {
-                    path.lineTo(new paper.Point(scaledX, scaledY));
-                }
-            }
-            
-            // 如果路径是闭合的（起点和终点接近），则闭合路径
-            const firstPoint = tracedPath[0];
-            const lastPoint = tracedPath[tracedPath.length - 1];
-            const distance = Math.sqrt(
-                Math.pow(firstPoint[0] - lastPoint[0], 2) + 
-                Math.pow(firstPoint[1] - lastPoint[1], 2)
-            );
-            
-            if (distance < 10) {
-                path.closePath();
-            }
-            
-            // 平滑路径
-            path.smooth();
-            
-            // 创建路径数据对象并添加到绘图画布
-            const points = [];
-            for (let segment of path.segments) {
-                points.push({ x: segment.point.x, y: segment.point.y });
-            }
-            
-            const pathData = {
-                path: path,
-                points: points,
-                length: this.drawingCanvas.pathProcessor.calculatePathLength(points),
-                id: this.drawingCanvas.generatePathId()
-            };
-            
-            this.drawingCanvas.paths.push(pathData);
-            path.data = pathData;
-        }
-        
-        // 更新路径信息显示
-        this.drawingCanvas.updatePathInfo();
-        
-        // 重绘画布
-        paper.view.draw();
-    }
-
     /**
      * 选择工具
      */

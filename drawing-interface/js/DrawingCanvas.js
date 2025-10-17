@@ -1495,4 +1495,103 @@ class DrawingCanvas {
         this.lastTime = 0;
         this.velocityHistory = [];
     }
+
+    /**
+     * 添加追踪的路径到画布
+     * @param {Array} tracedPaths - 追踪的路径数组
+     * @param {Number} imageWidth - 图片宽度
+     * @param {Number} imageHeight - 图片高度
+     */
+    addTracedPaths(tracedPaths, imageWidth, imageHeight) {
+        if (!tracedPaths || tracedPaths.length === 0) return;
+        
+        // 获取画布尺寸
+        const canvasBounds = paper.view.bounds;
+        const canvasWidth = canvasBounds.width;
+        const canvasHeight = canvasBounds.height;
+        
+        // 计算缩放比例，使图片适应画布中心区域（留一些边距）
+        const margin = 50;
+        const availableWidth = canvasWidth - 2 * margin;
+        const availableHeight = canvasHeight - 2 * margin;
+        
+        const scaleX = availableWidth / imageWidth;
+        const scaleY = availableHeight / imageHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // 计算居中偏移
+        const scaledWidth = imageWidth * scale;
+        const scaledHeight = imageHeight * scale;
+        const offsetX = (canvasWidth - scaledWidth) / 2;
+        const offsetY = (canvasHeight - scaledHeight) / 2;
+        
+        console.log('Adding traced paths:', {
+            count: tracedPaths.length,
+            imageSize: { width: imageWidth, height: imageHeight },
+            canvasSize: { width: canvasWidth, height: canvasHeight },
+            scale: scale,
+            offset: { x: offsetX, y: offsetY }
+        });
+        
+        // 转换每个路径
+        for (const tracedPath of tracedPaths) {
+            if (tracedPath.length < 2) continue;
+            
+            // 创建Paper.js路径
+            const path = new paper.Path();
+            path.strokeColor = this.strokeColor;
+            path.strokeWidth = this.strokeWidth;
+            path.strokeCap = 'round';
+            path.strokeJoin = 'round';
+            path.fillColor = null;
+            
+            // 添加路径点
+            for (let i = 0; i < tracedPath.length; i++) {
+                const [x, y] = tracedPath[i];
+                
+                // 应用缩放和偏移
+                const scaledX = x * scale + offsetX;
+                const scaledY = y * scale + offsetY;
+                
+                if (i === 0) {
+                    path.moveTo(new paper.Point(scaledX, scaledY));
+                } else {
+                    path.lineTo(new paper.Point(scaledX, scaledY));
+                }
+            }
+            
+            // 如果路径是闭合的（起点和终点接近），则闭合路径
+            const firstPoint = tracedPath[0];
+            const lastPoint = tracedPath[tracedPath.length - 1];
+            const distance = Math.sqrt(
+                Math.pow(firstPoint[0] - lastPoint[0], 2) + 
+                Math.pow(firstPoint[1] - lastPoint[1], 2)
+            );
+            
+            if (distance < 10) {
+                path.closePath();
+            }
+            
+            // 路径已经由ImageTracer处理，不再需要额外平滑
+            // path.smooth();
+            
+            // 创建路径数据对象并添加到路径集合
+            const points = [];
+            for (let segment of path.segments) {
+                points.push({ x: segment.point.x, y: segment.point.y });
+            }
+            
+            this.addPathToCollection(path, points);
+            
+            console.log('Path added:', {
+                segments: path.segments.length,
+                points: points.length,
+                bounds: path.bounds
+            });
+        }
+        
+        // 更新路径信息显示
+        this.updatePathInfo();
+    }
+
 }

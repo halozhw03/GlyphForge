@@ -11,7 +11,7 @@ class ImageTracer {
         // 追踪参数
         this.threshold = 128; // 二值化阈值
         this.minPathLength = 10; // 最小路径长度
-        this.simplifyTolerance = 2; // 路径简化容差
+        this.simplifyTolerance = 1.5; // 路径简化容差
         
         this.init();
     }
