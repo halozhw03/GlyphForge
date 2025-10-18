@@ -53,6 +53,86 @@ class WorkspaceCanvas {
     }
     
     /**
+     * 获取对象的基础尺寸（用于2D显示和3D模拟的默认值）
+     */
+    getBaseDimensions(objectType) {
+        const defaults = {
+            cube: {
+                width: 20,
+                height: 20,
+                depth: 20,
+                displayWidth: 30,
+                displayHeight: 30
+            },
+            sphere: {
+                width: 20,
+                height: 20,
+                depth: 20,
+                radius: 10,
+                displayRadius: 15,
+                displayWidth: 30,
+                displayHeight: 30
+            },
+            cylinder: {
+                width: 20,
+                height: 20,
+                depth: 20,
+                radius: 10,
+                displayRadius: 12,
+                displayHeight: 24
+            },
+            box: {
+                width: 30,
+                height: 14,
+                depth: 20,
+                displayWidth: 40,
+                displayHeight: 20
+            }
+        };
+        
+        return { ...(defaults[objectType] || defaults.cube) };
+    }
+    
+    /**
+     * 生成对象尺寸，对于cube会引入随机缩放
+     */
+    generateObjectDimensions(objectType) {
+        const dimensions = this.getBaseDimensions(objectType);
+        
+        if (objectType === 'cube') {
+            const scale = this.generateCubeScale();
+            dimensions.width *= scale;
+            dimensions.height *= scale;
+            dimensions.depth *= scale;
+            
+            if (dimensions.displayWidth) {
+                dimensions.displayWidth *= scale;
+            }
+            if (dimensions.displayHeight) {
+                dimensions.displayHeight *= scale;
+            }
+            if (dimensions.displayRadius) {
+                dimensions.displayRadius *= scale;
+            }
+            
+            dimensions.scale = scale;
+        } else {
+            dimensions.scale = 1;
+        }
+        
+        return dimensions;
+    }
+    
+    /**
+     * 生成cube的随机缩放比例
+     */
+    generateCubeScale() {
+        const minScale = 0.6;
+        const maxScale = 1.4;
+        return parseFloat((minScale + Math.random() * (maxScale - minScale)).toFixed(2));
+    }
+    
+    /**
      * 初始化Paper.js
      */
     initPaperJS() {
@@ -311,7 +391,8 @@ class WorkspaceCanvas {
             position: { x: point.x, y: point.y },
             targetPosition: null,
             isSelected: false,
-            state: 'placed'
+            state: 'placed',
+            dimensions: this.generateObjectDimensions(this.selectedObjectType)
         };
         
         this.objects.push(objectData);
@@ -380,6 +461,16 @@ class WorkspaceCanvas {
     drawObjectToCanvas(objectData) {
         const ctx = this.canvasElement.getContext('2d');
         const point = objectData.position;
+        const dims = objectData.dimensions || this.getBaseDimensions(objectData.type);
+        
+        if (!objectData.dimensions) {
+            objectData.dimensions = dims;
+        }
+        
+        const displayWidth = dims.displayWidth ?? (dims.displayRadius ? dims.displayRadius * 2 : 30);
+        const displayHeight = dims.displayHeight ?? displayWidth;
+        const displayRadius = dims.displayRadius ?? displayWidth / 2;
+        const labelOffset = (displayHeight ?? (displayRadius * 2)) / 2 + 10;
         
         // 根据状态设置颜色
         let fillColor, strokeColor;
@@ -408,24 +499,44 @@ class WorkspaceCanvas {
         // 根据类型绘制不同形状
         switch (objectData.type) {
             case 'cube':
-                ctx.fillRect(point.x - 15, point.y - 15, 30, 30);
-                ctx.strokeRect(point.x - 15, point.y - 15, 30, 30);
+                ctx.fillRect(
+                    point.x - displayWidth / 2,
+                    point.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
+                ctx.strokeRect(
+                    point.x - displayWidth / 2,
+                    point.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
                 break;
             case 'sphere':
                 ctx.beginPath();
-                ctx.arc(point.x, point.y, 15, 0, 2 * Math.PI);
+                ctx.arc(point.x, point.y, displayRadius, 0, 2 * Math.PI);
                 ctx.fill();
                 ctx.stroke();
                 break;
             case 'cylinder':
                 ctx.beginPath();
-                ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
+                ctx.arc(point.x, point.y, displayRadius, 0, 2 * Math.PI);
                 ctx.fill();
                 ctx.stroke();
                 break;
             case 'box':
-                ctx.fillRect(point.x - 20, point.y - 10, 40, 20);
-                ctx.strokeRect(point.x - 20, point.y - 10, 40, 20);
+                ctx.fillRect(
+                    point.x - displayWidth / 2,
+                    point.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
+                ctx.strokeRect(
+                    point.x - displayWidth / 2,
+                    point.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
                 break;
         }
         
@@ -433,7 +544,7 @@ class WorkspaceCanvas {
         ctx.fillStyle = '#000';
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(objectData.type.toUpperCase(), point.x, point.y - 25);
+        ctx.fillText(objectData.type.toUpperCase(), point.x, point.y - labelOffset);
         
         // 如果有目标位置，绘制目标和连接线
         if (objectData.targetPosition) {
@@ -616,7 +727,8 @@ class WorkspaceCanvas {
             type: this.selectedObjectType,
             position: { x: point.x, y: point.y },
             targetPosition: null,
-            isSelected: false
+            isSelected: false,
+            dimensions: this.generateObjectDimensions(this.selectedObjectType)
         };
 
         this.objects.push(objectData);
@@ -635,6 +747,16 @@ class WorkspaceCanvas {
      */
     drawObjectFallback(objectData) {
         const ctx = this.canvasElement.getContext('2d');
+        const dims = objectData.dimensions || this.getBaseDimensions(objectData.type);
+        
+        if (!objectData.dimensions) {
+            objectData.dimensions = dims;
+        }
+        
+        const displayWidth = dims.displayWidth ?? (dims.displayRadius ? dims.displayRadius * 2 : 30);
+        const displayHeight = dims.displayHeight ?? displayWidth;
+        const displayRadius = dims.displayRadius ?? displayWidth / 2;
+        const labelOffset = (displayHeight ?? (displayRadius * 2)) / 2 + 10;
 
         // 根据状态设置颜色
         let fillColor, strokeColor;
@@ -653,35 +775,69 @@ class WorkspaceCanvas {
         // 根据类型绘制不同形状
         switch (objectData.type) {
             case 'cube':
-                ctx.fillRect(objectData.position.x - 15, objectData.position.y - 15, 30, 30);
-                ctx.strokeRect(objectData.position.x - 15, objectData.position.y - 15, 30, 30);
+                ctx.fillRect(
+                    objectData.position.x - displayWidth / 2,
+                    objectData.position.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
+                ctx.strokeRect(
+                    objectData.position.x - displayWidth / 2,
+                    objectData.position.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
                 break;
             case 'sphere':
                 ctx.beginPath();
-                ctx.arc(objectData.position.x, objectData.position.y, 15, 0, 2 * Math.PI);
+                ctx.arc(objectData.position.x, objectData.position.y, displayRadius, 0, 2 * Math.PI);
                 ctx.fill();
                 ctx.stroke();
                 break;
             case 'cylinder':
                 ctx.beginPath();
-                ctx.arc(objectData.position.x, objectData.position.y, 12, 0, 2 * Math.PI);
+                ctx.arc(objectData.position.x, objectData.position.y, displayRadius, 0, 2 * Math.PI);
                 ctx.fill();
                 ctx.stroke();
                 break;
             case 'box':
-                ctx.fillRect(objectData.position.x - 20, objectData.position.y - 10, 40, 20);
-                ctx.strokeRect(objectData.position.x - 20, objectData.position.y - 10, 40, 20);
+                ctx.fillRect(
+                    objectData.position.x - displayWidth / 2,
+                    objectData.position.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
+                ctx.strokeRect(
+                    objectData.position.x - displayWidth / 2,
+                    objectData.position.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
                 break;
             default:
-                ctx.fillRect(objectData.position.x - 15, objectData.position.y - 15, 30, 30);
-                ctx.strokeRect(objectData.position.x - 15, objectData.position.y - 15, 30, 30);
+                ctx.fillRect(
+                    objectData.position.x - displayWidth / 2,
+                    objectData.position.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
+                ctx.strokeRect(
+                    objectData.position.x - displayWidth / 2,
+                    objectData.position.y - displayHeight / 2,
+                    displayWidth,
+                    displayHeight
+                );
         }
 
         // 绘制标签
         ctx.fillStyle = '#000';
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(objectData.type.toUpperCase(), objectData.position.x, objectData.position.y - 20);
+        ctx.fillText(
+            objectData.type.toUpperCase(),
+            objectData.position.x,
+            objectData.position.y - labelOffset
+        );
 
         // 如果有目标位置，绘制目标标记和连接线
         if (objectData.targetPosition) {
@@ -947,7 +1103,8 @@ class WorkspaceCanvas {
             position: { x: point.x, y: point.y },
             targetPosition: null,
             isSelected: false,
-            state: 'placed' // 新状态：placed, targeted, completed
+            state: 'placed', // 新状态：placed, targeted, completed
+            dimensions: this.generateObjectDimensions(this.selectedObjectType)
         };
         
         const visualObject = this.createVisualObject(objectData);
@@ -986,24 +1143,43 @@ class WorkspaceCanvas {
      * 创建可视化物品
      */
     createVisualObject(objectData) {
+        if (!objectData.dimensions) {
+            objectData.dimensions = this.getBaseDimensions(objectData.type);
+        }
+        
         const point = new this.paperScope.Point(objectData.position.x, objectData.position.y);
+        const dims = objectData.dimensions || this.getBaseDimensions(objectData.type);
+        const displayWidth = dims.displayWidth ?? (dims.displayRadius ? dims.displayRadius * 2 : 30);
+        const displayHeight = dims.displayHeight ?? displayWidth;
+        const displayRadius = dims.displayRadius ?? displayWidth / 2;
+        const labelOffset = (displayHeight ?? (displayRadius * 2)) / 2 + 10;
+        
         let shape;
         
         switch (objectData.type) {
             case 'cube':
-                shape = new this.paperScope.Path.Rectangle(point.subtract(15), new this.paperScope.Size(30, 30));
+                shape = new this.paperScope.Path.Rectangle(
+                    point.subtract([displayWidth / 2, displayHeight / 2]),
+                    new this.paperScope.Size(displayWidth, displayHeight)
+                );
                 break;
             case 'sphere':
-                shape = new this.paperScope.Path.Circle(point, 15);
+                shape = new this.paperScope.Path.Circle(point, displayRadius);
                 break;
             case 'cylinder':
-                shape = new this.paperScope.Path.Circle(point, 12);
+                shape = new this.paperScope.Path.Circle(point, displayRadius);
                 break;
             case 'box':
-                shape = new this.paperScope.Path.Rectangle(point.subtract([20, 10]), new this.paperScope.Size(40, 20));
+                shape = new this.paperScope.Path.Rectangle(
+                    point.subtract([displayWidth / 2, displayHeight / 2]),
+                    new this.paperScope.Size(displayWidth, displayHeight)
+                );
                 break;
             default:
-                shape = new this.paperScope.Path.Rectangle(point.subtract(15), new this.paperScope.Size(30, 30));
+                shape = new this.paperScope.Path.Rectangle(
+                    point.subtract([displayWidth / 2, displayHeight / 2]),
+                    new this.paperScope.Size(displayWidth, displayHeight)
+                );
         }
         
         // 设置样式
@@ -1012,7 +1188,7 @@ class WorkspaceCanvas {
         shape.strokeWidth = 2;
         
         // 添加标签
-        const label = new this.paperScope.PointText(point.add([0, -25]));
+        const label = new this.paperScope.PointText(point.add([0, -labelOffset]));
         label.content = objectData.type.toUpperCase();
         label.fontSize = 10;
         label.fillColor = '#4a5568';
@@ -1325,7 +1501,8 @@ class WorkspaceCanvas {
             id: obj.id,
             type: obj.type,
             position: obj.position,
-            targetPosition: obj.targetPosition
+            targetPosition: obj.targetPosition,
+            dimensions: obj.dimensions ? { ...obj.dimensions } : null
         }));
     }
     

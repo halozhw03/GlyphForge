@@ -154,6 +154,77 @@ class RobotGripper {
     }
     
     /**
+     * 基础尺寸定义，保持与WorkspaceCanvas一致
+     */
+    getBaseDimensions(objectType) {
+        const defaults = {
+            cube: {
+                width: 20,
+                height: 20,
+                depth: 20,
+                displayWidth: 30,
+                displayHeight: 30
+            },
+            sphere: {
+                width: 20,
+                height: 20,
+                depth: 20,
+                radius: 10,
+                displayRadius: 15,
+                displayWidth: 30,
+                displayHeight: 30
+            },
+            cylinder: {
+                width: 20,
+                height: 20,
+                depth: 20,
+                radius: 10,
+                displayRadius: 12,
+                displayHeight: 24
+            },
+            box: {
+                width: 30,
+                height: 14,
+                depth: 20,
+                displayWidth: 40,
+                displayHeight: 20
+            }
+        };
+        
+        return { ...(defaults[objectType] || defaults.cube) };
+    }
+    
+    /**
+     * 统一处理尺寸，保证3D构建所需的属性完备
+     */
+    resolveDimensions(objectData) {
+        const base = this.getBaseDimensions(objectData.type);
+        const source = objectData.dimensions ? { ...objectData.dimensions } : {};
+        const dimensions = { ...base, ...source };
+        
+        if (dimensions.radius == null) {
+            const reference = dimensions.width ?? dimensions.displayWidth ?? 20;
+            dimensions.radius = reference / 2;
+        }
+        
+        if (dimensions.width == null && dimensions.radius != null) {
+            dimensions.width = dimensions.radius * 2;
+        }
+        if (dimensions.depth == null && dimensions.radius != null) {
+            dimensions.depth = dimensions.radius * 2;
+        }
+        if (dimensions.height == null) {
+            if (dimensions.radius != null) {
+                dimensions.height = dimensions.radius * 2;
+            } else {
+                dimensions.height = dimensions.displayHeight ?? dimensions.width ?? 20;
+            }
+        }
+        
+        return dimensions;
+    }
+    
+    /**
      * 设置物品数据
      */
     setObjects(objects) {
@@ -161,7 +232,8 @@ class RobotGripper {
             id: obj.id,
             type: obj.type,
             position: { ...obj.position },
-            targetPosition: obj.targetPosition ? { ...obj.targetPosition } : null
+            targetPosition: obj.targetPosition ? { ...obj.targetPosition } : null,
+            dimensions: obj.dimensions ? { ...obj.dimensions } : null
         }));
         this.rebuildObjects();
         console.log('Objects set for robot simulation:', this.objects.length);
@@ -193,38 +265,56 @@ class RobotGripper {
      * 创建3D物品（使用与Drawing Mode相同的坐标系统）
      */
     create3DObject(objectData, workAreaOverride = null) {
+        const dimensions = this.resolveDimensions(objectData);
         let geometry, material;
-        const size = 20;
-        
-        // 记录物体尺寸用于叠放计算
-        let objectSize = { width: size, height: size, depth: size };
+        let objectSize;
         
         switch (objectData.type) {
             case 'cube':
-                geometry = new THREE.BoxGeometry(size, size, size);
-                objectSize = { width: size, height: size, depth: size };
+                geometry = new THREE.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth);
+                objectSize = {
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    depth: dimensions.depth
+                };
                 break;
             case 'sphere':
-                geometry = new THREE.SphereGeometry(size/2, 16, 16);
-                objectSize = { width: size, height: size, depth: size };
+                geometry = new THREE.SphereGeometry(dimensions.radius, 24, 24);
+                objectSize = {
+                    width: dimensions.radius * 2,
+                    height: dimensions.radius * 2,
+                    depth: dimensions.radius * 2
+                };
                 break;
             case 'cylinder':
-                geometry = new THREE.CylinderGeometry(size/2, size/2, size, 16);
-                objectSize = { width: size, height: size, depth: size };
+                geometry = new THREE.CylinderGeometry(dimensions.radius, dimensions.radius, dimensions.height, 24);
+                objectSize = {
+                    width: dimensions.radius * 2,
+                    height: dimensions.height,
+                    depth: dimensions.radius * 2
+                };
                 break;
             case 'box':
-                geometry = new THREE.BoxGeometry(size * 1.5, size * 0.7, size);
-                objectSize = { width: size * 1.5, height: size * 0.7, depth: size };
+                geometry = new THREE.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth);
+                objectSize = {
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    depth: dimensions.depth
+                };
                 break;
             default:
-                geometry = new THREE.BoxGeometry(size, size, size);
-                objectSize = { width: size, height: size, depth: size };
+                geometry = new THREE.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth);
+                objectSize = {
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    depth: dimensions.depth
+                };
         }
         
-        material = new THREE.MeshLambertMaterial({ 
+        material = new THREE.MeshStandardMaterial({ 
             color: 0x3182ce,
-            transparent: true,
-            opacity: 0.8
+            roughness: 0.4,
+            metalness: 0.1
         });
         
         const mesh = new THREE.Mesh(geometry, material);
@@ -266,6 +356,7 @@ class RobotGripper {
             id: objectData.id,
             type: objectData.type,
             mesh: mesh,
+            dimensions: { ...dimensions },
             size: objectSize,
             originalPosition: { ...mesh.position },
             targetPosition: objectData.targetPosition ? {
