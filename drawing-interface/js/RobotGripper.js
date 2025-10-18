@@ -17,7 +17,8 @@ class RobotGripper {
         this.isSimulating = false;
         this.isPaused = false;
         this.animationSpeed = 2.0; // 机器人移动速度倍数
-        
+        this.baseObjectColor = 0xff1d48; // 高饱和红色
+
         // 抓取状态
         this.gripperState = {
             position: { x: 0, y: 100, z: 0 }, // 初始位置
@@ -312,10 +313,12 @@ class RobotGripper {
         }
         
         material = new THREE.MeshStandardMaterial({ 
-            color: 0x3182ce,
+            color: this.baseObjectColor,
             roughness: 0.4,
             metalness: 0.1
         });
+        material.transparent = false;
+        material.opacity = 1.0;
         
         const mesh = new THREE.Mesh(geometry, material);
         
@@ -649,8 +652,9 @@ class RobotGripper {
             objectData.isGripped = false;
             
             // 改变物品颜色表示已放置
-            objectData.mesh.material.color.setHex(0x38a169);
-            objectData.mesh.material.opacity = 0.8;
+            objectData.mesh.material.color.setHex(this.baseObjectColor);
+            objectData.mesh.material.opacity = 1.0;
+            objectData.mesh.material.transparent = false;
             
             // 更新指示灯
             this.updateGripperLight('working');
@@ -775,7 +779,9 @@ class RobotGripper {
         if (this.gripperState.isGripping && this.gripperState.grippedObject) {
             const grippedObject = this.gripperState.grippedObject;
             grippedObject.mesh.position.copy(grippedObject.originalPosition);
-            grippedObject.mesh.material.color.setHex(0x3182ce);
+            grippedObject.mesh.material.color.setHex(this.baseObjectColor);
+            grippedObject.mesh.material.opacity = 1.0;
+            grippedObject.mesh.material.transparent = false;
             grippedObject.isGripped = false;
         }
         

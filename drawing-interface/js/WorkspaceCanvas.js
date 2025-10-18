@@ -476,20 +476,20 @@ class WorkspaceCanvas {
         let fillColor, strokeColor;
         switch (objectData.state) {
             case 'placed':
-                fillColor = '#3182ce';
-                strokeColor = '#2c5282';
+                fillColor = '#ff1d48';
+                strokeColor = '#991b1b';
                 break;
             case 'targeted':
-                fillColor = '#38a169';
-                strokeColor = '#2f855a';
+                fillColor = '#ff3b30';
+                strokeColor = '#9b2c2c';
                 break;
             case 'completed':
                 fillColor = '#9f7aea';
                 strokeColor = '#805ad5';
                 break;
             default:
-                fillColor = '#3182ce';
-                strokeColor = '#2c5282';
+                fillColor = '#ff1d48';
+                strokeColor = '#991b1b';
         }
         
         ctx.fillStyle = fillColor;
@@ -761,11 +761,11 @@ class WorkspaceCanvas {
         // 根据状态设置颜色
         let fillColor, strokeColor;
         if (objectData.targetPosition) {
-            fillColor = '#38a169'; // 已设置目标 - 绿色
-            strokeColor = '#2f855a';
+            fillColor = '#ff3b30'; // 已设置目标 - 亮红色
+            strokeColor = '#9b2c2c';
         } else {
-            fillColor = '#3182ce'; // 默认 - 蓝色
-            strokeColor = '#2c5282';
+            fillColor = '#ff1d48'; // 默认 - 高饱和红色
+            strokeColor = '#991b1b';
         }
 
         ctx.fillStyle = fillColor;
@@ -1183,8 +1183,8 @@ class WorkspaceCanvas {
         }
         
         // 设置样式
-        shape.fillColor = '#3182ce';
-        shape.strokeColor = '#2c5282';
+        shape.fillColor = '#ff1d48';
+        shape.strokeColor = '#991b1b';
         shape.strokeWidth = 2;
         
         // 添加标签
@@ -1212,22 +1212,25 @@ class WorkspaceCanvas {
         
         switch (objectData.state) {
             case 'placed':
-                // 刚放置的状态 - 蓝色
-                shape.fillColor = '#3182ce';
-                shape.strokeColor = '#2c5282';
+                // 刚放置的状态 - 高饱和红色
+                shape.fillColor = '#ff1d48';
+                shape.strokeColor = '#991b1b';
                 shape.strokeWidth = 2;
                 if (label) label.fillColor = '#4a5568';
+                shape.shadowColor = null;
+                shape.shadowBlur = 0;
+                shape.shadowOffset = new this.paperScope.Point(0, 0);
                 break;
                 
             case 'targeted':
-                // 已设置目标的状态 - 绿色
-                shape.fillColor = '#38a169';
-                shape.strokeColor = '#2f855a';
+                // 已设置目标的状态 - 亮红色以保持一致
+                shape.fillColor = '#ff3b30';
+                shape.strokeColor = '#9b2c2c';
                 shape.strokeWidth = 3;
                 if (label) label.fillColor = '#2d3748';
                 
                 // 添加轻微的阴影效果
-                shape.shadowColor = 'rgba(56, 161, 105, 0.3)';
+                shape.shadowColor = 'rgba(255, 59, 48, 0.3)';
                 shape.shadowBlur = 5;
                 shape.shadowOffset = new this.paperScope.Point(2, 2);
                 break;
@@ -1238,6 +1241,9 @@ class WorkspaceCanvas {
                 shape.strokeColor = '#805ad5';
                 shape.strokeWidth = 2;
                 if (label) label.fillColor = '#553c9a';
+                shape.shadowColor = null;
+                shape.shadowBlur = 0;
+                shape.shadowOffset = new this.paperScope.Point(0, 0);
                 break;
         }
         
