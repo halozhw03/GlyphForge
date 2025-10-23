@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/drawing-interface/index.html" },
+    { "source": "/editor", "destination": "/editor/index.html" },
+    { "source": "/editor/(.*)", "destination": "/editor/$1" },
+    { "source": "/drawing-interface", "destination": "/drawing-interface/index.html" },
+    { "source": "/drawing-interface/(.*)", "destination": "/drawing-interface/$1" },
+    { "source": "/examples/(.*)", "destination": "/examples/$1" }
+  ]
+}
+
