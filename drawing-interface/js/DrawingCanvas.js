@@ -4,7 +4,7 @@
 class DrawingCanvas {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
-        console.log('DrawingCanvas constructor - canvas element:', this.canvas);
+        Debug.log('DrawingCanvas constructor - canvas element:', this.canvas);
         
         if (!this.canvas) {
             throw new Error(`Canvas element with ID "${canvasId}" not found`);
@@ -15,7 +15,7 @@ class DrawingCanvas {
         
         // 初始化Paper.js
         paper.setup(this.canvas);
-        console.log('Paper.js setup completed');
+        Debug.log('Paper.js setup completed');
         
         // 工具状态
         this.currentTool = 'freehand';
@@ -49,13 +49,13 @@ class DrawingCanvas {
         // 监听 bed 长宽比事件，动态调整容器比例
         window.addEventListener('bedAspectRatioCalculated', (e) => {
             const bedAspectRatio = e.detail.aspectRatio;
-            console.log('DrawingCanvas: Bed aspect ratio received:', bedAspectRatio);
+            Debug.log('DrawingCanvas: Bed aspect ratio received:', bedAspectRatio);
             
             // 设置容器的 aspect-ratio
             const container = this.canvas.parentElement;
             if (container && bedAspectRatio) {
                 container.style.aspectRatio = `${bedAspectRatio}`;
-                console.log('DrawingCanvas container aspect ratio set to:', bedAspectRatio);
+                Debug.log('DrawingCanvas container aspect ratio set to:', bedAspectRatio);
             }
             
             // 重新调整canvas大小
@@ -73,7 +73,7 @@ class DrawingCanvas {
         // 延迟调整画布大小，确保容器已经正确渲染
         setTimeout(() => {
             this.resize();
-            console.log('Canvas resized. New size:', this.canvas.width, 'x', this.canvas.height);
+            Debug.log('Canvas resized. New size:', this.canvas.width, 'x', this.canvas.height);
         }, 100);
     }
 
@@ -131,7 +131,7 @@ class DrawingCanvas {
      * 鼠标按下事件
      */
     handleMouseDown(event) {
-        console.log('Mouse down event:', event.point, 'Current tool:', this.currentTool);
+        Debug.log('Mouse down event:', event.point, 'Current tool:', this.currentTool);
         
         // 首先检查是否点击了控制点（支持拖拽编辑）
         const hitResult = paper.project.hitTest(event.point, {
@@ -296,7 +296,7 @@ class DrawingCanvas {
     startFreehandDrawing(point) {
         // 检查起始点是否在有效区域内
         if (!this.isPointInValidArea(point)) {
-            console.warn('Drawing started outside valid area, adjusting to boundary');
+            Debug.warn('Drawing started outside valid area, adjusting to boundary');
             const bounds = paper.view.bounds;
             const margin = 20;
 
@@ -351,7 +351,7 @@ class DrawingCanvas {
         
         // 处理路径
         const isSmoothing = this.pathProcessor.smoothingFactor > 0;
-        console.log('Smoothing factor:', this.pathProcessor.smoothingFactor, 'Is smoothing:', isSmoothing);
+        Debug.log('Smoothing factor:', this.pathProcessor.smoothingFactor, 'Is smoothing:', isSmoothing);
         
         const processedPoints = this.pathProcessor.processPath(this.currentPoints, {
             removeJitter: isSmoothing,
@@ -648,11 +648,11 @@ class DrawingCanvas {
         
         const [start, end, cp1, cp2] = this.tempPoints;
         
-        console.log('DrawingCanvas: Creating Bezier curve');
-        console.log('Start:', start);
-        console.log('End:', end);
-        console.log('Control Point 1:', cp1);
-        console.log('Control Point 2:', cp2);
+        Debug.log('DrawingCanvas: Creating Bezier curve');
+        Debug.log('Start:', start);
+        Debug.log('End:', end);
+        Debug.log('Control Point 1:', cp1);
+        Debug.log('Control Point 2:', cp2);
         
         this.currentPath = new paper.Path();
         this.currentPath.strokeColor = this.strokeColor;
@@ -665,8 +665,8 @@ class DrawingCanvas {
             new paper.Point(end.x, end.y)
         );
         
-        console.log('DrawingCanvas: Bezier path created, length:', this.currentPath.length);
-        console.log('DrawingCanvas: Bezier path segments:', this.currentPath.segments?.length);
+        Debug.log('DrawingCanvas: Bezier path created, length:', this.currentPath.length);
+        Debug.log('DrawingCanvas: Bezier path segments:', this.currentPath.segments?.length);
         
         // 添加到路径列表
         const pathPoints = this.pathProcessor.paperPathToPoints(this.currentPath);
@@ -725,7 +725,7 @@ class DrawingCanvas {
                 // 自动选择新创建的路径并显示控制点
                 this.selectPath(shapePath);
 
-                console.log(`Shape created: ${this.currentShape} at (${point.x}, ${point.y}) with size ${defaultSize}`);
+                Debug.log(`Shape created: ${this.currentShape} at (${point.x}, ${point.y}) with size ${defaultSize}`);
             }
         }
 
@@ -739,9 +739,9 @@ class DrawingCanvas {
     setCurrentShape(shapeType) {
         if (this.shapeLibrary.getShapeInfo(shapeType)) {
             this.currentShape = shapeType;
-            console.log(`Current shape set to: ${shapeType}`);
+            Debug.log(`Current shape set to: ${shapeType}`);
         } else {
-            console.warn(`Unknown shape type: ${shapeType}`);
+            Debug.warn(`Unknown shape type: ${shapeType}`);
         }
     }
 
@@ -826,7 +826,7 @@ class DrawingCanvas {
             let newPoints;
             if (hasCurves) {
                 // 对于贝塞尔曲线，使用路径处理器重新采样
-                console.log('DrawingCanvas: Re-sampling Bezier curve after edit');
+                Debug.log('DrawingCanvas: Re-sampling Bezier curve after edit');
                 newPoints = this.pathProcessor.paperPathToPoints(parentPath);
             } else {
                 // 对于直线路径，直接使用segment点
@@ -852,7 +852,7 @@ class DrawingCanvas {
      * 处理删除工具点击
      */
     handleDeleteToolClick(point) {
-        console.log('Delete tool activated, paths available:', this.paths.length);
+        Debug.log('Delete tool activated, paths available:', this.paths.length);
         
         // 使用更全面的hitTest选项
         const hitResult = paper.project.hitTest(point, {
@@ -863,7 +863,7 @@ class DrawingCanvas {
         });
         
         if (hitResult && hitResult.item && this.isUserDrawnPath(hitResult.item)) {
-            console.log('Deleting path via hitTest');
+            Debug.log('Deleting path via hitTest');
             this.deletePath(hitResult.item);
             return;
         }
@@ -887,10 +887,10 @@ class DrawingCanvas {
         });
         
         if (closestPath) {
-            console.log('Deleting closest path, distance:', closestDistance);
+            Debug.log('Deleting closest path, distance:', closestDistance);
             this.deletePath(closestPath);
         } else {
-            console.log('No path found to delete within tolerance');
+            Debug.log('No path found to delete within tolerance');
         }
     }
 
@@ -1145,7 +1145,7 @@ class DrawingCanvas {
         // 验证和清理路径数据
         const validPaths = this.paths.filter(pathData => {
             if (!pathData.points || !Array.isArray(pathData.points) || pathData.points.length < 2) {
-                console.warn('Invalid path data detected and filtered out:', pathData);
+                Debug.warn('Invalid path data detected and filtered out:', pathData);
                 return false;
             }
 
@@ -1155,14 +1155,14 @@ class DrawingCanvas {
 
             const validPoints = pathData.points.filter(point => {
                 if (typeof point.x !== 'number' || typeof point.y !== 'number') {
-                    console.warn('Invalid point coordinates:', point);
+                    Debug.warn('Invalid point coordinates:', point);
                     return false;
                 }
 
                 // 检查点是否在画布边界内（包含余量）
                 if (point.x < -margin || point.x > canvasBounds.width + margin ||
                     point.y < -margin || point.y > canvasBounds.height + margin) {
-                    console.warn(`Path point (${point.x}, ${point.y}) is outside canvas bounds (${canvasBounds.width}x${canvasBounds.height})`);
+                    Debug.warn(`Path point (${point.x}, ${point.y}) is outside canvas bounds (${canvasBounds.width}x${canvasBounds.height})`);
                     return false;
                 }
 
@@ -1171,7 +1171,7 @@ class DrawingCanvas {
 
             // 如果没有有效点，跳过这个路径
             if (validPoints.length < 2) {
-                console.warn('Path has insufficient valid points after filtering:', pathData.id);
+                Debug.warn('Path has insufficient valid points after filtering:', pathData.id);
                 return false;
             }
 
@@ -1281,7 +1281,7 @@ class DrawingCanvas {
     startDynamicDrawing(point) {
         // 检查起始点是否在有效区域内
         if (!this.isPointInValidArea(point)) {
-            console.warn('Dynamic drawing started outside valid area, adjusting to boundary');
+            Debug.warn('Dynamic drawing started outside valid area, adjusting to boundary');
             const bounds = paper.view.bounds;
             const margin = 20;
 
@@ -1364,7 +1364,7 @@ class DrawingCanvas {
         
         // 添加调试信息（可选）
         if (Math.random() < 0.01) { // 偶尔打印调试信息
-            console.log(`Speed: ${avgVelocity.toFixed(2)}, Size: ${size.toFixed(1)}, Opacity: ${opacity.toFixed(2)}`);
+            Debug.log(`Speed: ${avgVelocity.toFixed(2)}, Size: ${size.toFixed(1)}, Opacity: ${opacity.toFixed(2)}`);
         }
 
         // 添加一些随机变化来增加艺术效果
@@ -1525,7 +1525,7 @@ class DrawingCanvas {
         const offsetX = (canvasWidth - scaledWidth) / 2;
         const offsetY = (canvasHeight - scaledHeight) / 2;
         
-        console.log('Adding traced paths:', {
+        Debug.log('Adding traced paths:', {
             count: tracedPaths.length,
             imageSize: { width: imageWidth, height: imageHeight },
             canvasSize: { width: canvasWidth, height: canvasHeight },
@@ -1583,7 +1583,7 @@ class DrawingCanvas {
             
             this.addPathToCollection(path, points);
             
-            console.log('Path added:', {
+            Debug.log('Path added:', {
                 segments: path.segments.length,
                 points: points.length,
                 bounds: path.bounds

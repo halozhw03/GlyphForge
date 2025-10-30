@@ -30,14 +30,14 @@ class RoughUI {
      * 初始化RoughUI
      */
     initialize() {
-        console.log('Initializing RoughUI...');
+        Debug.log('Initializing RoughUI...');
         
         // 等待一小段时间确保其他组件已初始化
         setTimeout(() => {
             this.decorateUI();
             this.setupEventListeners();
             this.initialized = true;
-            console.log('RoughUI initialized successfully!');
+            Debug.log('RoughUI initialized successfully!');
         }, 100);
     }
 
@@ -183,7 +183,7 @@ class RoughUI {
                 this.svgElements.set(element, svg);
             }
         } catch (error) {
-            console.warn('Failed to decorate element:', error);
+            Debug.warn('Failed to decorate element:', error);
         }
     }
 
@@ -255,7 +255,7 @@ class RoughUI {
                     });
                     svg.appendChild(shape);
                 } catch (error) {
-                    console.warn('Failed to update button decoration:', error);
+                    Debug.warn('Failed to update button decoration:', error);
                 }
             };
 
@@ -338,7 +338,7 @@ class RoughUI {
                 });
                 svg.appendChild(shape);
             } catch (error) {
-                console.warn('Failed to decorate button:', error);
+                Debug.warn('Failed to decorate button:', error);
             }
         };
 
@@ -401,7 +401,7 @@ class RoughUI {
                 });
                 svg.appendChild(shape);
             } catch (error) {
-                console.warn('Failed to decorate tool button:', error);
+                Debug.warn('Failed to decorate tool button:', error);
             }
         };
 
@@ -474,7 +474,7 @@ class RoughUI {
                 });
                 svg.appendChild(shape);
             } catch (error) {
-                console.warn('Failed to decorate small button:', error);
+                Debug.warn('Failed to decorate small button:', error);
             }
         };
 
@@ -569,7 +569,7 @@ class RoughUI {
                 });
                 svg.appendChild(shape);
             } catch (error) {
-                console.warn('Failed to decorate step circle:', error);
+                Debug.warn('Failed to decorate step circle:', error);
             }
         };
 
@@ -617,7 +617,7 @@ class RoughUI {
                 });
                 svg.appendChild(shape);
             } catch (error) {
-                console.warn('Failed to decorate connector:', error);
+                Debug.warn('Failed to decorate connector:', error);
             }
         };
 
@@ -666,7 +666,7 @@ class RoughUI {
             svg.appendChild(shape);
             this.svgElements.set(printerSelect, svg);
         } catch (error) {
-            console.warn('Failed to decorate printer select:', error);
+            Debug.warn('Failed to decorate printer select:', error);
         }
     }
 
@@ -724,7 +724,7 @@ class RoughUI {
             svg.appendChild(shape);
             this.svgElements.set(input, svg);
         } catch (error) {
-            console.warn('Failed to decorate input:', error);
+            Debug.warn('Failed to decorate input:', error);
         }
     }
 
@@ -795,7 +795,7 @@ class RoughUI {
      * 刷新所有装饰
      */
     refresh() {
-        console.log('Refreshing RoughUI decorations...');
+        Debug.log('Refreshing RoughUI decorations...');
         
         // 清除所有现有的SVG
         this.svgElements.forEach((svg, element) => {

@@ -57,13 +57,13 @@ class ThreeJSWorkArea {
      * 初始化Three.js场景
      */
     initThreeJS() {
-        console.log('Initializing Three.js scene...');
-        console.log('THREE object available:', typeof THREE !== 'undefined');
-        console.log('Container dimensions:', this.container.clientWidth, 'x', this.container.clientHeight);
+        Debug.log('Initializing Three.js scene...');
+        Debug.log('THREE object available:', typeof THREE !== 'undefined');
+        Debug.log('Container dimensions:', this.container.clientWidth, 'x', this.container.clientHeight);
         
         // 检查容器尺寸
         if (this.container.clientWidth === 0 || this.container.clientHeight === 0) {
-            console.error('Container has zero dimensions!');
+            Debug.error('Container has zero dimensions!');
             setTimeout(() => this.initThreeJS(), 100); // 重试
             return;
         }
@@ -109,8 +109,8 @@ class ThreeJSWorkArea {
         canvas.style.width = containerWidth + 'px';
         canvas.style.height = containerHeight + 'px';
         
-        console.log('Canvas size set to:', containerWidth, 'x', containerHeight);
-        console.log('Canvas aspect ratio:', containerWidth / containerHeight);
+        Debug.log('Canvas size set to:', containerWidth, 'x', containerHeight);
+        Debug.log('Canvas aspect ratio:', containerWidth / containerHeight);
         
         this.container.appendChild(canvas);
         
@@ -121,9 +121,9 @@ class ThreeJSWorkArea {
             this.controls.maxDistance = 800;
             this.controls.minPolarAngle = Math.PI / 6; // 30度
             this.controls.maxPolarAngle = Math.PI / 2; // 90度
-            console.log('SimpleOrbitControls initialized successfully');
+            Debug.log('SimpleOrbitControls initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize SimpleOrbitControls:', error);
+            Debug.error('Failed to initialize SimpleOrbitControls:', error);
             this.controls = null;
         }
         
@@ -210,10 +210,10 @@ class ThreeJSWorkArea {
                 }
 
                 if (!this.printBed) {
-                    console.error("Could not find print bed in the model. Please check the object names.");
+                    Debug.error("Could not find print bed in the model. Please check the object names.");
                 }
                 if (!this.printHead) {
-                    console.error("Could not find print head in the model. Please check the object names.");
+                    Debug.error("Could not find print head in the model. Please check the object names.");
                 } else {
                     // Calculate the offset from the object's origin to its lowest point.
                     const boundingBox = new THREE.Box3().setFromObject(this.printHead);
@@ -234,17 +234,17 @@ class ThreeJSWorkArea {
                     let parent = this.printHead.parent;
                     let parentLevel = 0;
                     while (parent) {
-                        console.log(`Setting parent ${parentLevel} visible: ${parent.type} "${parent.name}"`);
+                        Debug.log(`Setting parent ${parentLevel} visible: ${parent.type} "${parent.name}"`);
                         parent.visible = true;
                         parent = parent.parent;
                         parentLevel++;
                     }
                     
-                    console.log('Print head initialized and set visible:', this.printHead.visible);
+                    Debug.log('Print head initialized and set visible:', this.printHead.visible);
                     
                     // 验证设置
                     setTimeout(() => {
-                        console.log('Print head visibility after init:', this.printHead.visible);
+                        Debug.log('Print head visibility after init:', this.printHead.visible);
                     }, 100);
                 }
                 
@@ -265,10 +265,10 @@ class ThreeJSWorkArea {
                 this.ensurePrintHeadVisible();
             },
             (xhr) => {
-                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                Debug.log((xhr.loaded / xhr.total * 100) + '% loaded');
             },
             (error) => {
-                console.error('An error happened while loading the GLTF model', error);
+                Debug.error('An error happened while loading the GLTF model', error);
             }
         );
     }
@@ -292,7 +292,7 @@ class ThreeJSWorkArea {
         const canvasHeight = drawingCanvas ? drawingCanvas.clientHeight : 400;
 
         if (!this.printBed) {
-            console.error("Cannot set paths, print bed not found.");
+            Debug.error("Cannot set paths, print bed not found.");
             return;
         }
 
@@ -482,7 +482,7 @@ class ThreeJSWorkArea {
      */
     updateSimulation() {
         if (this.currentPathIndex >= this.paths.length) {
-            console.log('ThreeJSWorkArea: All paths completed, calling completeSimulation');
+            Debug.log('ThreeJSWorkArea: All paths completed, calling completeSimulation');
             this.completeSimulation();
             return;
         }
@@ -500,7 +500,7 @@ class ThreeJSWorkArea {
             
             // 检查是否所有路径都已完成
             if (this.currentPathIndex >= this.paths.length) {
-                console.log('ThreeJSWorkArea: All paths completed after finishing current path, calling completeSimulation');
+                Debug.log('ThreeJSWorkArea: All paths completed after finishing current path, calling completeSimulation');
                 this.completeSimulation();
             }
             return;
@@ -545,7 +545,7 @@ class ThreeJSWorkArea {
      * 完成模拟
      */
     completeSimulation() {
-        console.log('ThreeJSWorkArea: completeSimulation called');
+        Debug.log('ThreeJSWorkArea: completeSimulation called');
         this.isSimulating = false;
         this.isPaused = false;
         this.progress = 100;
@@ -560,12 +560,12 @@ class ThreeJSWorkArea {
         });
         
         // 通知主应用模拟完成
-        console.log('ThreeJSWorkArea: onSimulationComplete callback exists?', !!this.onSimulationComplete);
+        Debug.log('ThreeJSWorkArea: onSimulationComplete callback exists?', !!this.onSimulationComplete);
         if (this.onSimulationComplete) {
-            console.log('ThreeJSWorkArea: calling onSimulationComplete callback');
+            Debug.log('ThreeJSWorkArea: calling onSimulationComplete callback');
             this.onSimulationComplete();
         } else {
-            console.log('ThreeJSWorkArea: no onSimulationComplete callback set!');
+            Debug.log('ThreeJSWorkArea: no onSimulationComplete callback set!');
         }
     }
 
@@ -702,8 +702,8 @@ class ThreeJSWorkArea {
         const width = this.container.clientWidth;
         const height = this.container.clientHeight;
         
-        console.log('Updating canvas size:', width, 'x', height);
-        console.log('New aspect ratio:', width / height);
+        Debug.log('Updating canvas size:', width, 'x', height);
+        Debug.log('New aspect ratio:', width / height);
         
         // 更新正交相机的视口
         const aspect = width / height;
@@ -741,7 +741,7 @@ class ThreeJSWorkArea {
      */
     ensurePrintHeadVisible() {
         if (this.printHead && this.printHead.visible === false) {
-            console.log('Print head visibility was false, resetting to true');
+            Debug.log('Print head visibility was false, resetting to true');
             this.printHead.visible = true;
         }
     }

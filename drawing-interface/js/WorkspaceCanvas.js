@@ -26,13 +26,13 @@ class WorkspaceCanvas {
         // 监听 bed 长宽比事件，动态调整容器比例
         window.addEventListener('bedAspectRatioCalculated', (e) => {
             this.bedAspectRatio = e.detail.aspectRatio;
-            console.log('WorkspaceCanvas: Bed aspect ratio received:', this.bedAspectRatio);
+            Debug.log('WorkspaceCanvas: Bed aspect ratio received:', this.bedAspectRatio);
             
             // 设置容器的 aspect-ratio
             const container = this.canvasElement.parentElement;
             if (container && this.bedAspectRatio) {
                 container.style.aspectRatio = `${this.bedAspectRatio}`;
-                console.log('Container aspect ratio set to:', this.bedAspectRatio);
+                Debug.log('Container aspect ratio set to:', this.bedAspectRatio);
             }
             
             // 重新调整canvas大小
@@ -139,9 +139,9 @@ class WorkspaceCanvas {
         // 延迟初始化，确保canvas元素已正确渲染
         setTimeout(() => {
             try {
-                console.log('Initializing Paper.js for WorkspaceCanvas...');
-                console.log('Canvas element:', this.canvasElement);
-                console.log('Canvas dimensions:', this.canvasElement.clientWidth, 'x', this.canvasElement.clientHeight);
+                Debug.log('Initializing Paper.js for WorkspaceCanvas...');
+                Debug.log('Canvas element:', this.canvasElement);
+                Debug.log('Canvas dimensions:', this.canvasElement.clientWidth, 'x', this.canvasElement.clientHeight);
                 
                 // 为工作空间画布创建独立的Paper.js范围
                 this.paperScope = new paper.PaperScope();
@@ -182,7 +182,7 @@ class WorkspaceCanvas {
                 // 绘制工作区域边界
                 this.drawWorkAreaBoundary();
                 
-                console.log('WorkspaceCanvas Paper.js initialized successfully with size:', width, 'x', height);
+                Debug.log('WorkspaceCanvas Paper.js initialized successfully with size:', width, 'x', height);
                 
                 // 初始化完成后绑定事件
                 this.bindEvents();
@@ -193,7 +193,7 @@ class WorkspaceCanvas {
                 this.ensureCanvasDisplay();
                 
             } catch (error) {
-                console.error('Failed to initialize WorkspaceCanvas Paper.js:', error);
+                Debug.error('Failed to initialize WorkspaceCanvas Paper.js:', error);
                 // 使用统一的事件处理系统
                 this.initUnifiedEventSystem();
             }
@@ -204,10 +204,10 @@ class WorkspaceCanvas {
      * 初始化统一事件系统
      */
     initUnifiedEventSystem() {
-        console.log('Initializing unified event system for WorkspaceCanvas');
+        Debug.log('Initializing unified event system for WorkspaceCanvas');
         this.isPaperInitialized = false;
         this.useFallback = true;
-        console.log('Using fallback system:', this.useFallback);
+        Debug.log('Using fallback system:', this.useFallback);
 
         // 设置画布尺寸
         this.setupCanvasSize();
@@ -248,7 +248,7 @@ class WorkspaceCanvas {
         this.canvasWidth = width;
         this.canvasHeight = height;
 
-        console.log('WorkspaceCanvas size set to:', width, 'x', height, 'DPR:', dpr);
+        Debug.log('WorkspaceCanvas size set to:', width, 'x', height, 'DPR:', dpr);
     }
     
     /**
@@ -308,9 +308,9 @@ class WorkspaceCanvas {
             setTimeout(() => this.resize(), 100);
         });
         
-        console.log('Unified events bound successfully');
-        console.log('Canvas element:', this.canvasElement);
-        console.log('Canvas element dimensions:', this.canvasElement.clientWidth, 'x', this.canvasElement.clientHeight);
+        Debug.log('Unified events bound successfully');
+        Debug.log('Canvas element:', this.canvasElement);
+        Debug.log('Canvas element dimensions:', this.canvasElement.clientWidth, 'x', this.canvasElement.clientHeight);
     }
     
     /**
@@ -318,31 +318,31 @@ class WorkspaceCanvas {
      */
     handleCanvasClick(e) {
         const point = this.getAccurateMousePosition(e);
-        console.log('Canvas click at:', point, 'tool:', this.currentTool);
+        Debug.log('Canvas click at:', point, 'tool:', this.currentTool);
 
         // 检查是否在工作区域内
         if (!this.isPointInWorkAreaUnified(point)) {
-            console.log('Click outside work area, ignoring');
+            Debug.log('Click outside work area, ignoring');
             return;
         }
 
-        console.log('Processing click with tool:', this.currentTool);
+        Debug.log('Processing click with tool:', this.currentTool);
 
         switch (this.currentTool) {
             case 'place-object':
-                console.log('Calling placeObjectUnified');
+                Debug.log('Calling placeObjectUnified');
                 this.placeObjectUnified(point);
                 break;
             case 'set-target':
-                console.log('Calling setTargetPositionUnified');
+                Debug.log('Calling setTargetPositionUnified');
                 this.setTargetPositionUnified(point);
                 break;
             case 'delete-object':
-                console.log('Calling deleteObjectAtUnified');
+                Debug.log('Calling deleteObjectAtUnified');
                 this.deleteObjectAtUnified(point);
                 break;
             default:
-                console.log('Unknown tool:', this.currentTool);
+                Debug.log('Unknown tool:', this.currentTool);
         }
     }
     
@@ -383,7 +383,7 @@ class WorkspaceCanvas {
      * 统一的放置物品方法
      */
     placeObjectUnified(point) {
-        console.log('Placing object (unified) at:', point, 'type:', this.selectedObjectType);
+        Debug.log('Placing object (unified) at:', point, 'type:', this.selectedObjectType);
         
         const objectData = {
             id: this.generateObjectId(),
@@ -405,7 +405,7 @@ class WorkspaceCanvas {
         this.currentObjectForTarget = objectData;
         this.autoSwitchToTargetMode();
         
-        console.log('Object placed successfully (unified):', objectData);
+        Debug.log('Object placed successfully (unified):', objectData);
         this.dispatchEvent('objectPlaced', objectData);
     }
     
@@ -430,7 +430,7 @@ class WorkspaceCanvas {
         this.redrawCanvas();
         
         this.updateObjectInfo();
-        console.log('Target position set (unified) for:', this.currentObjectForTarget.id);
+        Debug.log('Target position set (unified) for:', this.currentObjectForTarget.id);
         
         // 自动切换回放置模式
         this.autoSwitchToPlaceMode();
@@ -445,13 +445,13 @@ class WorkspaceCanvas {
      * 统一的删除物品方法
      */
     deleteObjectAtUnified(point) {
-        console.log('deleteObjectAtUnified called with point:', point);
+        Debug.log('deleteObjectAtUnified called with point:', point);
         const nearestObject = this.findNearestObjectUnified(point);
         if (nearestObject) {
-            console.log('Found nearest object for deletion:', nearestObject);
+            Debug.log('Found nearest object for deletion:', nearestObject);
             this.deleteObjectUnified(nearestObject.id);
         } else {
-            console.log('No object found near click point for deletion');
+            Debug.log('No object found near click point for deletion');
         }
     }
     
@@ -606,11 +606,11 @@ class WorkspaceCanvas {
         let nearest = null;
         let minDistance = Infinity;
 
-        console.log('Finding nearest object to point:', point);
-        console.log('Available objects:', this.objects.length);
+        Debug.log('Finding nearest object to point:', point);
+        Debug.log('Available objects:', this.objects.length);
 
         if (this.objects.length === 0) {
-            console.log('No objects available for selection');
+            Debug.log('No objects available for selection');
             return null;
         }
 
@@ -620,7 +620,7 @@ class WorkspaceCanvas {
                 Math.pow(obj.position.y - point.y, 2)
             );
 
-            console.log('Object at:', obj.position, 'Distance:', distance);
+            Debug.log('Object at:', obj.position, 'Distance:', distance);
 
             if (distance < minDistance) {
                 minDistance = distance;
@@ -628,9 +628,9 @@ class WorkspaceCanvas {
             }
         });
 
-        console.log('Min distance found:', minDistance, 'Threshold: 30');
+        Debug.log('Min distance found:', minDistance, 'Threshold: 30');
         const result = minDistance < 30 ? nearest : null;
-        console.log('Returning nearest object:', result);
+        Debug.log('Returning nearest object:', result);
 
         return result;
     }
@@ -639,21 +639,21 @@ class WorkspaceCanvas {
      * 删除物品（统一版本）
      */
     deleteObjectUnified(objectId) {
-        console.log('deleteObjectUnified called for objectId:', objectId);
+        Debug.log('deleteObjectUnified called for objectId:', objectId);
         const index = this.objects.findIndex(obj => obj.id === objectId);
-        console.log('Object index found:', index);
+        Debug.log('Object index found:', index);
         
         if (index !== -1) {
             const deletedObject = this.objects[index];
-            console.log('Deleting object:', deletedObject);
+            Debug.log('Deleting object:', deletedObject);
             
             this.objects.splice(index, 1);
             this.redrawCanvas();
             this.updateObjectInfo();
-            console.log('Object deleted (unified):', objectId);
+            Debug.log('Object deleted (unified):', objectId);
             this.dispatchEvent('objectDeleted', { id: objectId });
         } else {
-            console.log('Object not found in objects array:', objectId);
+            Debug.log('Object not found in objects array:', objectId);
         }
     }
     
@@ -692,7 +692,7 @@ class WorkspaceCanvas {
                 y: e.clientY - rect.top
             };
             
-            console.log('Fallback click at:', point, 'tool:', this.currentTool);
+            Debug.log('Fallback click at:', point, 'tool:', this.currentTool);
             
             // 简单的边界检查
             const margin = 20;
@@ -718,9 +718,9 @@ class WorkspaceCanvas {
      * 备用放置物品方法
      */
     placeObjectFallback(point) {
-        console.log('Placing object (fallback) at:', point);
-        console.log('Selected object type:', this.selectedObjectType);
-        console.log('Current objects count before placement:', this.objects.length);
+        Debug.log('Placing object (fallback) at:', point);
+        Debug.log('Selected object type:', this.selectedObjectType);
+        Debug.log('Current objects count before placement:', this.objects.length);
 
         const objectData = {
             id: this.generateObjectId(),
@@ -734,8 +734,8 @@ class WorkspaceCanvas {
         this.objects.push(objectData);
         this.updateObjectInfo();
 
-        console.log('Object placed (fallback):', objectData);
-        console.log('Current objects count after placement:', this.objects.length);
+        Debug.log('Object placed (fallback):', objectData);
+        Debug.log('Current objects count after placement:', this.objects.length);
         this.dispatchEvent('objectPlaced', objectData);
 
         // 重新绘制整个canvas以确保显示正确
@@ -906,14 +906,14 @@ class WorkspaceCanvas {
             // 为找到的物品设置目标位置
             nearest.targetPosition = { x: point.x, y: point.y };
 
-            console.log('Target set (fallback) for:', nearest.id);
+            Debug.log('Target set (fallback) for:', nearest.id);
             this.updateObjectInfo();
             this.dispatchEvent('targetSet', nearest);
 
             // 重新绘制整个canvas以显示目标标记和连接线
             this.redrawCanvasFallback();
         } else {
-            console.log('No object found near point (fallback):', point);
+            Debug.log('No object found near point (fallback):', point);
         }
     }
     
@@ -921,12 +921,12 @@ class WorkspaceCanvas {
      * 备用删除物品方法
      */
     deleteObjectAtFallback(point) {
-        console.log('deleteObjectAtFallback called with point:', point);
-        console.log('Current objects count:', this.objects.length);
-        console.log('Current objects:', this.objects);
+        Debug.log('deleteObjectAtFallback called with point:', point);
+        Debug.log('Current objects count:', this.objects.length);
+        Debug.log('Current objects:', this.objects);
 
         if (this.objects.length === 0) {
-            console.log('No objects to delete');
+            Debug.log('No objects to delete');
             return;
         }
 
@@ -940,7 +940,7 @@ class WorkspaceCanvas {
                 Math.pow(obj.position.y - point.y, 2)
             );
 
-            console.log('Object at:', obj.position, 'Distance:', distance);
+            Debug.log('Object at:', obj.position, 'Distance:', distance);
 
             if (distance < minDistance) {
                 minDistance = distance;
@@ -948,11 +948,11 @@ class WorkspaceCanvas {
             }
         });
 
-        console.log('Min distance found:', minDistance, 'Threshold: 30');
+        Debug.log('Min distance found:', minDistance, 'Threshold: 30');
 
         // 减小阈值距离，使删除更精确
         if (minDistance < 30 && nearest) {
-            console.log('Deleting object:', nearest.id);
+            Debug.log('Deleting object:', nearest.id);
             // 从数组中移除物品
             const index = this.objects.findIndex(obj => obj.id === nearest.id);
             if (index !== -1) {
@@ -962,13 +962,13 @@ class WorkspaceCanvas {
                 // 重新绘制canvas（备用系统）
                 this.redrawCanvasFallback();
 
-                console.log('Object deleted (fallback):', nearest.id);
+                Debug.log('Object deleted (fallback):', nearest.id);
                 this.dispatchEvent('objectDeleted', { id: nearest.id });
             } else {
-                console.log('Object not found in array for deletion');
+                Debug.log('Object not found in array for deletion');
             }
         } else {
-            console.log('No object found near point (fallback):', point, 'Nearest distance:', minDistance);
+            Debug.log('No object found near point (fallback):', point, 'Nearest distance:', minDistance);
         }
     }
     
@@ -1033,7 +1033,7 @@ class WorkspaceCanvas {
     bindEvents() {
         // 为了避免与DrawingCanvas的Paper.js scope冲突，
         // WorkspaceCanvas统一使用自定义事件系统
-        console.log('WorkspaceCanvas: Using unified event system to avoid Paper.js conflicts');
+        Debug.log('WorkspaceCanvas: Using unified event system to avoid Paper.js conflicts');
         this.bindUnifiedEvents();
     }
     
@@ -1042,18 +1042,18 @@ class WorkspaceCanvas {
      */
     handleMouseDown(event) {
         const point = event.point;
-        console.log('Mouse down at point (Paper.js):', point, 'current tool:', this.currentTool);
+        Debug.log('Mouse down at point (Paper.js):', point, 'current tool:', this.currentTool);
         
         // 检查是否在工作区域内
         const inWorkArea = this.isPointInWorkArea(point);
-        console.log('Point in work area:', inWorkArea);
+        Debug.log('Point in work area:', inWorkArea);
         
         if (!inWorkArea) {
-            console.log('Click outside work area, ignoring');
+            Debug.log('Click outside work area, ignoring');
             return;
         }
         
-        console.log('Processing click with tool:', this.currentTool);
+        Debug.log('Processing click with tool:', this.currentTool);
         
         switch (this.currentTool) {
             case 'place-object':
@@ -1066,7 +1066,7 @@ class WorkspaceCanvas {
                 this.deleteObjectAt(point);
                 break;
             default:
-                console.log('Unknown tool:', this.currentTool);
+                Debug.log('Unknown tool:', this.currentTool);
         }
     }
     
@@ -1083,11 +1083,11 @@ class WorkspaceCanvas {
      */
     isPointInWorkArea(point) {
         if (!this.workAreaBounds) {
-            console.log('Work area bounds not initialized');
+            Debug.log('Work area bounds not initialized');
             return false;
         }
         const result = this.workAreaBounds.bounds.contains(point);
-        console.log('Point:', point, 'Work area bounds:', this.workAreaBounds.bounds, 'Contains:', result);
+        Debug.log('Point:', point, 'Work area bounds:', this.workAreaBounds.bounds, 'Contains:', result);
         return result;
     }
     
@@ -1095,7 +1095,7 @@ class WorkspaceCanvas {
      * 放置物品
      */
     placeObject(point) {
-        console.log('Placing object at point:', point, 'type:', this.selectedObjectType);
+        Debug.log('Placing object at point:', point, 'type:', this.selectedObjectType);
         
         const objectData = {
             id: this.generateObjectId(),
@@ -1113,7 +1113,7 @@ class WorkspaceCanvas {
         this.objects.push(objectData);
         this.updateObjectInfo();
         
-        console.log('Object placed successfully:', objectData);
+        Debug.log('Object placed successfully:', objectData);
         
         // 自动切换到目标设置模式
         this.currentObjectForTarget = objectData;
@@ -1136,7 +1136,7 @@ class WorkspaceCanvas {
         // 更新光标提示
         this.showMessage('Click to set target position for the placed object');
         
-        console.log('Auto-switched to target setting mode');
+        Debug.log('Auto-switched to target setting mode');
     }
     
     /**
@@ -1279,7 +1279,7 @@ class WorkspaceCanvas {
         this.drawConnectionLine(this.currentObjectForTarget);
         
         this.updateObjectInfo();
-        console.log('Target position set for object:', this.currentObjectForTarget.id);
+        Debug.log('Target position set for object:', this.currentObjectForTarget.id);
         
         // 自动切换回放置模式
         this.autoSwitchToPlaceMode();
@@ -1304,7 +1304,7 @@ class WorkspaceCanvas {
         // 更新光标提示
         this.showMessage('Target set! Click to place another object or start simulation');
         
-        console.log('Auto-switched back to placement mode');
+        Debug.log('Auto-switched back to placement mode');
     }
     
     /**
@@ -1365,7 +1365,7 @@ class WorkspaceCanvas {
      * 删除指定位置的物品
      */
     deleteObjectAt(point) {
-        console.log('deleteObjectAt (Paper.js) called with point:', point);
+        Debug.log('deleteObjectAt (Paper.js) called with point:', point);
         
         const hitResult = this.paperScope.project.hitTest(point, {
             fill: true,
@@ -1374,18 +1374,18 @@ class WorkspaceCanvas {
             tolerance: 15 // 增加容忍度，使点击更容易命中
         });
         
-        console.log('Hit test result:', hitResult);
+        Debug.log('Hit test result:', hitResult);
         
         if (hitResult && hitResult.item.data && hitResult.item.data.objectId) {
             const objectId = hitResult.item.data.objectId;
-            console.log('Found object to delete:', objectId);
+            Debug.log('Found object to delete:', objectId);
             this.deleteObject(objectId);
         } else {
-            console.log('No object found at point for deletion');
+            Debug.log('No object found at point for deletion');
             // 备用方案：使用距离检测
             const nearestObject = this.findNearestObject(point);
             if (nearestObject) {
-                console.log('Using fallback distance detection, deleting:', nearestObject.id);
+                Debug.log('Using fallback distance detection, deleting:', nearestObject.id);
                 this.deleteObject(nearestObject.id);
             }
         }
@@ -1408,7 +1408,7 @@ class WorkspaceCanvas {
             this.objects.splice(index, 1);
             
             this.updateObjectInfo();
-            console.log('Object deleted:', objectId);
+            Debug.log('Object deleted:', objectId);
             
             // 触发事件
             this.dispatchEvent('objectDeleted', { id: objectId });
@@ -1422,11 +1422,11 @@ class WorkspaceCanvas {
         let nearest = null;
         let minDistance = Infinity;
         
-        console.log('Finding nearest object (Paper.js) to point:', point);
-        console.log('Available objects:', this.objects.length);
+        Debug.log('Finding nearest object (Paper.js) to point:', point);
+        Debug.log('Available objects:', this.objects.length);
         
         if (this.objects.length === 0) {
-            console.log('No objects available for selection (Paper.js)');
+            Debug.log('No objects available for selection (Paper.js)');
             return null;
         }
         
@@ -1436,7 +1436,7 @@ class WorkspaceCanvas {
                 Math.pow(obj.position.y - point.y, 2)
             );
             
-            console.log('Object at:', obj.position, 'Distance:', distance);
+            Debug.log('Object at:', obj.position, 'Distance:', distance);
             
             if (distance < minDistance) {
                 minDistance = distance;
@@ -1444,9 +1444,9 @@ class WorkspaceCanvas {
             }
         });
         
-        console.log('Min distance found (Paper.js):', minDistance, 'Threshold: 30');
+        Debug.log('Min distance found (Paper.js):', minDistance, 'Threshold: 30');
         const result = minDistance < 30 ? nearest : null;
-        console.log('Returning nearest object (Paper.js):', result);
+        Debug.log('Returning nearest object (Paper.js):', result);
         
         return result;
     }
@@ -1479,11 +1479,11 @@ class WorkspaceCanvas {
      * 设置工具
      */
     setTool(toolName) {
-        console.log('WorkspaceCanvas.setTool called with:', toolName);
-        console.log('Previous tool was:', this.currentTool);
+        Debug.log('WorkspaceCanvas.setTool called with:', toolName);
+        Debug.log('Previous tool was:', this.currentTool);
         this.currentTool = toolName;
-        console.log('WorkspaceCanvas tool changed to:', toolName);
-        console.log('Current tool is now:', this.currentTool);
+        Debug.log('WorkspaceCanvas tool changed to:', toolName);
+        Debug.log('Current tool is now:', this.currentTool);
 
         // 更新工具显示
         this.updateToolDisplay();
@@ -1493,10 +1493,10 @@ class WorkspaceCanvas {
      * 设置选中的物品类型
      */
     setSelectedObjectType(objectType) {
-        console.log('WorkspaceCanvas.setSelectedObjectType called with:', objectType);
-        console.log('Previous selectedObjectType was:', this.selectedObjectType);
+        Debug.log('WorkspaceCanvas.setSelectedObjectType called with:', objectType);
+        Debug.log('Previous selectedObjectType was:', this.selectedObjectType);
         this.selectedObjectType = objectType;
-        console.log('New selectedObjectType is:', this.selectedObjectType);
+        Debug.log('New selectedObjectType is:', this.selectedObjectType);
     }
     
     /**
@@ -1516,8 +1516,8 @@ class WorkspaceCanvas {
      * 清除所有物品
      */
     clearAll() {
-        console.log('WorkspaceCanvas.clearAll called');
-        console.log('Current state - isPaperInitialized:', this.isPaperInitialized, 'useFallback:', this.useFallback, 'paperScope:', !!this.paperScope);
+        Debug.log('WorkspaceCanvas.clearAll called');
+        Debug.log('Current state - isPaperInitialized:', this.isPaperInitialized, 'useFallback:', this.useFallback, 'paperScope:', !!this.paperScope);
 
         // 清除对象数组（无论什么模式都要做）
         this.objects = [];
@@ -1529,7 +1529,7 @@ class WorkspaceCanvas {
         // 更新信息显示
         this.updateObjectInfo();
 
-        console.log('All objects cleared');
+        Debug.log('All objects cleared');
         this.dispatchEvent('allObjectsCleared');
     }
 
@@ -1543,7 +1543,7 @@ class WorkspaceCanvas {
 
             // 优先尝试Paper.js方法
             if (this.paperScope && this.isPaperInitialized && !this.useFallback) {
-                console.log('Ensuring Paper.js canvas display');
+                Debug.log('Ensuring Paper.js canvas display');
 
                 // 清除所有Paper.js对象
                 this.objects.forEach(obj => {
@@ -1552,7 +1552,7 @@ class WorkspaceCanvas {
                         if (obj.targetMarker) obj.targetMarker.remove();
                         if (obj.connectionLine) obj.connectionLine.remove();
                     } catch (e) {
-                        console.warn('Error removing Paper.js object:', e);
+                        Debug.warn('Error removing Paper.js object:', e);
                     }
                 });
 
@@ -1563,20 +1563,20 @@ class WorkspaceCanvas {
                 // 确保Paper.js视图被更新
                 this.paperScope.view.draw();
 
-                console.log('Paper.js canvas display ensured');
+                Debug.log('Paper.js canvas display ensured');
             } else {
-                console.log('Ensuring fallback canvas display');
+                Debug.log('Ensuring fallback canvas display');
                 // 使用备用系统：清除画布并重绘网格
                 this.drawBasicGrid();
             }
         } catch (error) {
-            console.error('Error ensuring canvas display, falling back to basic grid:', error);
+            Debug.error('Error ensuring canvas display, falling back to basic grid:', error);
             // 如果出现任何错误，强制使用备用方法
             this.useFallback = true;
             try {
                 this.drawBasicGrid();
             } catch (fallbackError) {
-                console.error('Even fallback failed:', fallbackError);
+                Debug.error('Even fallback failed:', fallbackError);
             }
         }
     }
@@ -1681,7 +1681,7 @@ class WorkspaceCanvas {
      * 显示消息
      */
     showMessage(message) {
-        console.log('WorkspaceCanvas message:', message);
+        Debug.log('WorkspaceCanvas message:', message);
         // 这里可以添加UI提示逻辑
     }
     

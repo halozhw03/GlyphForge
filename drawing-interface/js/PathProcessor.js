@@ -247,13 +247,13 @@ class PathProcessor {
         const points = [];
         const length = path.length;
 
-        console.log('PathProcessor: Converting path to points');
-        console.log('Path length:', length);
-        console.log('Path segments:', path.segments?.length);
+        Debug.log('PathProcessor: Converting path to points');
+        Debug.log('Path length:', length);
+        Debug.log('Path segments:', path.segments?.length);
         
         // 如果路径有segments，也打印出来看看
         if (path.segments) {
-            console.log('Path segments:', path.segments.map(seg => ({ 
+            Debug.log('Path segments:', path.segments.map(seg => ({ 
                 point: { x: seg.point.x, y: seg.point.y },
                 handleIn: seg.handleIn ? { x: seg.handleIn.x, y: seg.handleIn.y } : null,
                 handleOut: seg.handleOut ? { x: seg.handleOut.x, y: seg.handleOut.y } : null
@@ -266,12 +266,12 @@ class PathProcessor {
             (seg.handleOut && (seg.handleOut.x !== 0 || seg.handleOut.y !== 0))
         );
 
-        console.log('Path has curves:', hasCurves);
+        Debug.log('Path has curves:', hasCurves);
 
         if (hasCurves && length > 0) {
             // 对于贝塞尔曲线，使用更密集的采样
             const numSamples = Math.max(50, Math.min(200, Math.floor(length / 2))); // 50-200个采样点
-            console.log('Using', numSamples, 'samples for curved path');
+            Debug.log('Using', numSamples, 'samples for curved path');
             
             for (let i = 0; i <= numSamples; i++) {
                 const t = i / numSamples;
@@ -284,7 +284,7 @@ class PathProcessor {
         } else {
             // 对于直线，使用原来的采样方法
             const step = Math.max(1, length / 100);
-            console.log('Using step size', step, 'for straight path');
+            Debug.log('Using step size', step, 'for straight path');
             
             for (let offset = 0; offset <= length; offset += step) {
                 const point = path.getPointAt(offset);
@@ -294,9 +294,9 @@ class PathProcessor {
             }
         }
 
-        console.log('Generated points:', points.length);
-        console.log('First few points:', points.slice(0, 5));
-        console.log('Last few points:', points.slice(-5));
+        Debug.log('Generated points:', points.length);
+        Debug.log('First few points:', points.slice(0, 5));
+        Debug.log('Last few points:', points.slice(-5));
         return points;
     }
 

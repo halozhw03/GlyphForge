@@ -147,7 +147,7 @@ class ShapeLibrary {
                 );
                 
             default:
-                console.warn(`Unknown shape type: ${shapeType}`);
+                Debug.warn(`Unknown shape type: ${shapeType}`);
                 return [];
         }
     }

@@ -15,7 +15,7 @@ class PrinterManager {
         this.onPrintStatusChange = null;
         this.onError = null;
         
-        console.log('PrinterManager initialized');
+        Debug.log('PrinterManager initialized');
     }
 
     /**
@@ -35,14 +35,14 @@ class PrinterManager {
             // 使用p5实例的方法创建fab
             if (typeof window._p5FabInstance.createFab === 'function') {
                 this.fab = window._p5FabInstance.createFab();
-                console.log('p5.fab instance created:', this.fab);
+                Debug.log('p5.fab instance created:', this.fab);
                 return true;
             } else {
-                console.error('createFab function not available');
+                Debug.error('createFab function not available');
                 return false;
             }
         } catch (error) {
-            console.error('Failed to initialize p5.fab:', error);
+            Debug.error('Failed to initialize p5.fab:', error);
             if (this.onError) {
                 this.onError('Failed to initialize printer library: ' + error.message);
             }
@@ -63,7 +63,7 @@ class PrinterManager {
             this.currentConfig = config;
             this.printerType = printerType;
             
-            console.log('Printer config loaded:', config);
+            Debug.log('Printer config loaded:', config);
             
             // 如果fab已经初始化，更新配置
             if (this.fab && this.fab.configure) {
@@ -72,7 +72,7 @@ class PrinterManager {
             
             return config;
         } catch (error) {
-            console.error('Failed to load printer config:', error);
+            Debug.error('Failed to load printer config:', error);
             if (this.onError) {
                 this.onError('Failed to load printer config: ' + error.message);
             }
@@ -85,7 +85,7 @@ class PrinterManager {
      */
     async connectPrinter() {
         try {
-            console.log('Attempting to connect printer...');
+            Debug.log('Attempting to connect printer...');
             
             // 初始化fab（如果还未初始化）
             if (!this.fab) {
@@ -104,7 +104,7 @@ class PrinterManager {
             if (this.fab && this.fab.serial) {
                 // 设置串口事件监听
                 this.fab.serial.on('open', () => {
-                    console.log('Serial port opened');
+                    Debug.log('Serial port opened');
                     this.isConnected = true;
                     if (this.onConnectionChange) {
                         this.onConnectionChange(true);
@@ -112,7 +112,7 @@ class PrinterManager {
                 });
                 
                 this.fab.serial.on('close', () => {
-                    console.log('Serial port closed');
+                    Debug.log('Serial port closed');
                     this.isConnected = false;
                     if (this.onConnectionChange) {
                         this.onConnectionChange(false);
@@ -120,7 +120,7 @@ class PrinterManager {
                 });
                 
                 this.fab.serial.on('error', (error) => {
-                    console.error('Serial error:', error);
+                    Debug.error('Serial error:', error);
                     if (this.onError) {
                         this.onError('Serial error: ' + error);
                     }
@@ -129,13 +129,13 @@ class PrinterManager {
                 // 直接请求端口（最大兼容性）
                 // 部分 p5.webserial 版本对 filters 兼容性不一致，这里不传过滤项，避免报错
                 await this.fab.serial.requestPort();
-                console.log('Printer connection requested');
+                Debug.log('Printer connection requested');
             } else {
                 throw new Error('Serial interface not available');
             }
             
         } catch (error) {
-            console.error('Failed to connect printer:', error);
+            Debug.error('Failed to connect printer:', error);
             if (this.onError) {
                 // 用户取消选择端口时返回更友好的提示
                 if (error && (error.name === 'NotFoundError' || /No port selected/i.test(error.message))) {
@@ -156,14 +156,14 @@ class PrinterManager {
             if (this.fab && this.fab.serial && this.isConnected) {
                 await this.fab.serial.close();
                 this.isConnected = false;
-                console.log('Printer disconnected');
+                Debug.log('Printer disconnected');
                 
                 if (this.onConnectionChange) {
                     this.onConnectionChange(false);
                 }
             }
         } catch (error) {
-            console.error('Failed to disconnect printer:', error);
+            Debug.error('Failed to disconnect printer:', error);
             if (this.onError) {
                 this.onError('Failed to disconnect: ' + error.message);
             }
@@ -175,7 +175,7 @@ class PrinterManager {
      */
     pathsToGcode(paths, workArea) {
         if (!paths || paths.length === 0) {
-            console.warn('No paths to convert to G-code');
+            Debug.warn('No paths to convert to G-code');
             return '';
         }
         
@@ -238,7 +238,7 @@ class PrinterManager {
                 
                 // 检查边界
                 if (x < 0 || x > config.maxX || y < 0 || y > config.maxY) {
-                    console.warn(`Point out of bounds: (${x}, ${y})`);
+                    Debug.warn(`Point out of bounds: (${x}, ${y})`);
                     continue;
                 }
                 
@@ -265,7 +265,7 @@ class PrinterManager {
      */
     robotOperationsToGcode(objects, workArea) {
         if (!objects || objects.length === 0) {
-            console.warn('No robot operations to convert to G-code');
+            Debug.warn('No robot operations to convert to G-code');
             return '';
         }
         
@@ -376,11 +376,11 @@ class PrinterManager {
         }
         
         try {
-            console.log('Starting drawing print...');
+            Debug.log('Starting drawing print...');
             
             // 生成G-code
             const gcode = this.pathsToGcode(paths, workArea);
-            console.log('Generated G-code:', gcode);
+            Debug.log('Generated G-code:', gcode);
             
             // 发送G-code到打印机
             if (this.fab) {
@@ -405,11 +405,11 @@ class PrinterManager {
                 }
                 
                 this.fab.print();
-                console.log('Print started');
+                Debug.log('Print started');
             }
             
         } catch (error) {
-            console.error('Failed to start print:', error);
+            Debug.error('Failed to start print:', error);
             if (this.onError) {
                 this.onError('Print failed: ' + error.message);
             }
@@ -430,11 +430,11 @@ class PrinterManager {
         }
         
         try {
-            console.log('Starting robot print...');
+            Debug.log('Starting robot print...');
             
             // 生成G-code
             const gcode = this.robotOperationsToGcode(objects, workArea);
-            console.log('Generated G-code:', gcode);
+            Debug.log('Generated G-code:', gcode);
             
             // 发送G-code到打印机
             if (this.fab) {
@@ -454,11 +454,11 @@ class PrinterManager {
                 }
                 
                 this.fab.print();
-                console.log('Robot print started');
+                Debug.log('Robot print started');
             }
             
         } catch (error) {
-            console.error('Failed to start robot print:', error);
+            Debug.error('Failed to start robot print:', error);
             if (this.onError) {
                 this.onError('Robot print failed: ' + error.message);
             }
@@ -479,10 +479,10 @@ class PrinterManager {
                     this.onPrintStatusChange(false);
                 }
                 
-                console.log('Print stopped');
+                Debug.log('Print stopped');
             }
         } catch (error) {
-            console.error('Failed to stop print:', error);
+            Debug.error('Failed to stop print:', error);
             if (this.onError) {
                 this.onError('Failed to stop print: ' + error.message);
             }
@@ -512,9 +512,9 @@ class PrinterManager {
             gcode = this.robotOperationsToGcode(paths, workArea);
         }
         
-        console.log('=== G-code Preview ===');
-        console.log(gcode);
-        console.log('=== End Preview ===');
+        Debug.log('=== G-code Preview ===');
+        Debug.log(gcode);
+        Debug.log('=== End Preview ===');
         
         return gcode;
     }

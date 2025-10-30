@@ -27,16 +27,16 @@ class MechanicalArmSimulator {
      */
     initialize() {
         try {
-            console.log('Initializing 3D Mechanical Arm Simulator...');
+            Debug.log('Initializing 3D Mechanical Arm Simulator...');
             
             // 检查必要的DOM元素
             const canvasElement = document.getElementById('drawingCanvas');
             const clearButton = document.getElementById('clearAll');
             const simulateButton = document.getElementById('simulate');
             
-            console.log('Canvas element:', canvasElement);
-            console.log('Clear button:', clearButton);
-            console.log('Simulate button:', simulateButton);
+            Debug.log('Canvas element:', canvasElement);
+            Debug.log('Clear button:', clearButton);
+            Debug.log('Simulate button:', simulateButton);
             
             if (!canvasElement) {
                 throw new Error('Drawing canvas element not found');
@@ -44,11 +44,11 @@ class MechanicalArmSimulator {
             
             // 初始化绘图画布
             this.drawingCanvas = new DrawingCanvas('drawingCanvas');
-            console.log('DrawingCanvas initialized:', this.drawingCanvas);
+            Debug.log('DrawingCanvas initialized:', this.drawingCanvas);
             
             // 初始化工作空间画布（机器人模式）
             this.workspaceCanvas = new WorkspaceCanvas('workspaceCanvas');
-            console.log('WorkspaceCanvas initialized:', this.workspaceCanvas);
+            Debug.log('WorkspaceCanvas initialized:', this.workspaceCanvas);
             
             // 初始化3D工作区域
             this.threeJSWorkArea = new ThreeJSWorkArea('threejsCanvas');
@@ -56,7 +56,7 @@ class MechanicalArmSimulator {
             // 机器人抓取
             if (this.threeJSWorkArea && this.workspaceCanvas) {
                 this.robotGripper = new RobotGripper(this.threeJSWorkArea, this.workspaceCanvas);
-                console.log('RobotGripper initialized');
+                Debug.log('RobotGripper initialized');
             }
             
             // 初始化图片追踪器
@@ -65,11 +65,11 @@ class MechanicalArmSimulator {
             // 初始化打印机管理器
             this.printerManager = new PrinterManager();
             this.setupPrinterCallbacks();
-            console.log('PrinterManager initialized:', this.printerManager);
+            Debug.log('PrinterManager initialized:', this.printerManager);
             
             // 设置模拟完成回调
             this.threeJSWorkArea.onSimulationComplete = () => {
-                console.log('App: Simulation completed, updating button state');
+                Debug.log('App: Simulation completed, updating button state');
                 this.onSimulationComplete();
             };
             
@@ -87,18 +87,18 @@ class MechanicalArmSimulator {
             
             // 监听模型加载完成，确保打印头可见
             window.addEventListener('printerModelLoaded', () => {
-                console.log('App: Printer model loaded, ensuring print head visibility');
+                Debug.log('App: Printer model loaded, ensuring print head visibility');
                 if (this.threeJSWorkArea.printHead) {
                     this.threeJSWorkArea.printHead.visible = true;
-                    console.log('App: Print head visibility ensured:', this.threeJSWorkArea.printHead.visible);
+                    Debug.log('App: Print head visibility ensured:', this.threeJSWorkArea.printHead.visible);
                 }
             });
             
             this.isInitialized = true;
-            console.log('Initialization completed successfully!');
+            Debug.log('Initialization completed successfully!');
             
         } catch (error) {
-            console.error('Failed to initialize application:', error);
+            Debug.error('Failed to initialize application:', error);
             this.showError('Failed to initialize application. Please refresh the page.');
         }
     }
@@ -243,26 +243,26 @@ class MechanicalArmSimulator {
     bindHeaderControls() {
         // 清除所有按钮
         const clearButton = document.getElementById('clearAll');
-        console.log('Binding clear button:', clearButton);
+        Debug.log('Binding clear button:', clearButton);
         if (clearButton) {
             clearButton.addEventListener('click', () => {
-                console.log('Clear All button clicked');
+                Debug.log('Clear All button clicked');
                 this.clearAll();
             });
         } else {
-            console.error('Clear All button not found!');
+            Debug.error('Clear All button not found!');
         }
         
         // 模拟按钮
         const simulateButton = document.getElementById('simulate');
-        console.log('Binding simulate button:', simulateButton);
+        Debug.log('Binding simulate button:', simulateButton);
         if (simulateButton) {
             simulateButton.addEventListener('click', () => {
-                console.log('Simulate button clicked');
+                Debug.log('Simulate button clicked');
                 this.toggleSimulation();
             });
         } else {
-            console.error('Simulate button not found!');
+            Debug.error('Simulate button not found!');
         }
     }
 
@@ -301,20 +301,20 @@ class MechanicalArmSimulator {
     bindWorkspaceEvents() {
         // 监听工作空间画布事件
         document.addEventListener('workspaceCanvas:objectPlaced', (e) => {
-            console.log('Object placed:', e.detail);
+            Debug.log('Object placed:', e.detail);
         });
 
         document.addEventListener('workspaceCanvas:targetSet', (e) => {
-            console.log('Target set:', e.detail);
+            Debug.log('Target set:', e.detail);
         });
 
         document.addEventListener('workspaceCanvas:objectDeleted', (e) => {
-            console.log('Object deleted:', e.detail);
+            Debug.log('Object deleted:', e.detail);
         });
 
         // 监听工具切换事件
         document.addEventListener('workspaceCanvas:toolChanged', (e) => {
-            console.log('Tool changed:', e.detail);
+            Debug.log('Tool changed:', e.detail);
             this.updateRobotToolButtons(e.detail.tool);
         });
     }
@@ -336,7 +336,7 @@ class MechanicalArmSimulator {
         // 更新当前工具状态
         this.currentTool = toolName;
         
-        console.log('Robot tool buttons updated for:', toolName);
+        Debug.log('Robot tool buttons updated for:', toolName);
     }
 
 
@@ -456,7 +456,7 @@ class MechanicalArmSimulator {
             }
             
         } catch (error) {
-            console.error('Image processing error:', error);
+            Debug.error('Image processing error:', error);
             this.showNotification(
                 'Failed to process image. Please try a different image.', 
                 'error', 
@@ -599,7 +599,7 @@ class MechanicalArmSimulator {
         // 确保打印头可见
         if (this.threeJSWorkArea.printHead) {
             this.threeJSWorkArea.printHead.visible = true;
-            console.log('Robot mode: Print head set visible');
+            Debug.log('Robot mode: Print head set visible');
         }
         
         // 设置默认机器人工具
@@ -610,7 +610,7 @@ class MechanicalArmSimulator {
         // 确保进入机器人模式时，工具按钮无激活样式
         document.querySelectorAll('#robotModePanel .tool-btn').forEach(btn => btn.classList.remove('active'));
         
-        console.log('Switched to robot mode');
+        Debug.log('Switched to robot mode');
     }
 
     /**
@@ -652,10 +652,10 @@ class MechanicalArmSimulator {
         // 确保打印头可见（Drawing Mode 也使用打印头）
         if (this.threeJSWorkArea && this.threeJSWorkArea.printHead) {
             this.threeJSWorkArea.printHead.visible = true;
-            console.log('Drawing mode: Print head set visible');
+            Debug.log('Drawing mode: Print head set visible');
         }
         
-        console.log('Switched to drawing mode');
+        Debug.log('Switched to drawing mode');
     }
 
     /**
@@ -724,14 +724,14 @@ class MechanicalArmSimulator {
      * 选择物品形状
      */
     selectObjectShape(objectType, buttonElement = null) {
-        console.log('selectObjectShape called with:', objectType);
-        console.log('workspaceCanvas available:', !!this.workspaceCanvas);
+        Debug.log('selectObjectShape called with:', objectType);
+        Debug.log('workspaceCanvas available:', !!this.workspaceCanvas);
         
         if (!this.workspaceCanvas) return;
         
         // 设置工作空间画布的选中物品类型
         this.workspaceCanvas.setSelectedObjectType(objectType);
-        console.log('Object type set to WorkspaceCanvas:', objectType);
+        Debug.log('Object type set to WorkspaceCanvas:', objectType);
         
         // 更新物品形状按钮状态
         document.querySelectorAll('.object-shape-btn').forEach(btn => {
@@ -756,7 +756,7 @@ class MechanicalArmSimulator {
         // 显示物品提示
         this.showObjectTip(objectType);
         
-        console.log('Selected object shape completed:', objectType);
+        Debug.log('Selected object shape completed:', objectType);
     }
 
     /**
@@ -770,11 +770,11 @@ class MechanicalArmSimulator {
      * 清除所有内容
      */
     clearAll() {
-        console.log('clearAll called, isInitialized:', this.isInitialized);
-        console.log('currentMode:', this.currentMode);
+        Debug.log('clearAll called, isInitialized:', this.isInitialized);
+        Debug.log('currentMode:', this.currentMode);
         
         if (!this.isInitialized) {
-            console.log('Not initialized, returning');
+            Debug.log('Not initialized, returning');
             return;
         }
         
@@ -785,7 +785,7 @@ class MechanicalArmSimulator {
             
         if (this.hasUnsavedChanges()) {
             if (!confirm(message)) {
-                console.log('User cancelled clear operation');
+                Debug.log('User cancelled clear operation');
                 return;
             }
         }
@@ -793,24 +793,24 @@ class MechanicalArmSimulator {
         if (this.currentMode === 'robot') {
             // 清除机器人模式内容
             if (this.workspaceCanvas) {
-                console.log('Clearing workspace canvas');
+                Debug.log('Clearing workspace canvas');
                 this.workspaceCanvas.clearAll();
             }
             
             if (this.robotGripper) {
-                console.log('Clearing robot gripper objects');
+                Debug.log('Clearing robot gripper objects');
                 this.robotGripper.clearObjects();
             }
         } else {
             // 清除绘图模式内容
             if (this.drawingCanvas) {
-                console.log('Clearing drawing canvas');
+                Debug.log('Clearing drawing canvas');
                 this.drawingCanvas.clearAll();
             }
             
             // 停止并重置模拟
             if (this.threeJSWorkArea) {
-                console.log('Resetting 3D work area');
+                Debug.log('Resetting 3D work area');
                 this.threeJSWorkArea.stopSimulation();
                 this.threeJSWorkArea.setPaths([]);
             }
@@ -819,7 +819,7 @@ class MechanicalArmSimulator {
         // 重置模拟按钮
         this.updateSimulateButton('simulate');
         
-        console.log('Clear All completed');
+        Debug.log('Clear All completed');
     }
 
     /**
@@ -877,7 +877,7 @@ class MechanicalArmSimulator {
      * 开始模拟
      */
     startSimulation() {
-        console.log('startSimulation called, mode:', this.currentMode);
+        Debug.log('startSimulation called, mode:', this.currentMode);
         
         if (this.currentMode === 'robot') {
             return this.startRobotSimulation();
@@ -890,16 +890,16 @@ class MechanicalArmSimulator {
      * 开始绘画模拟
      */
     startDrawingSimulation() {
-        console.log('Starting drawing simulation');
+        Debug.log('Starting drawing simulation');
         
         if (!this.drawingCanvas || !this.threeJSWorkArea) {
-            console.error('Required components not available');
+            Debug.error('Required components not available');
             return;
         }
         
         // 获取所有路径
         const paths = this.drawingCanvas.getAllPaths();
-        console.log('Paths retrieved:', paths);
+        Debug.log('Paths retrieved:', paths);
         
         if (paths.length === 0) {
             this.showNotification('No paths to simulate. Please draw something first.', 'warning', 3000);
@@ -910,7 +910,7 @@ class MechanicalArmSimulator {
         for (let i = 0; i < paths.length; i++) {
             const path = paths[i];
             if (!path.points || !Array.isArray(path.points)) {
-                console.error(`Invalid path data at index ${i}:`, path);
+                Debug.error(`Invalid path data at index ${i}:`, path);
                 this.showNotification('Invalid path data detected. Please try drawing again.', 'error', 3000);
                 return;
             }
@@ -926,7 +926,7 @@ class MechanicalArmSimulator {
             // 更新按钮状态
             this.updateSimulateButton('pause');
         } catch (error) {
-            console.error('Error starting drawing simulation:', error);
+            Debug.error('Error starting drawing simulation:', error);
             this.showNotification('Failed to start simulation: ' + error.message, 'error', 4000);
         }
     }
@@ -935,16 +935,16 @@ class MechanicalArmSimulator {
      * 开始机器人模拟
      */
     startRobotSimulation() {
-        console.log('Starting robot simulation');
+        Debug.log('Starting robot simulation');
         
         if (!this.workspaceCanvas || !this.robotGripper) {
-            console.error('Required robot components not available');
+            Debug.error('Required robot components not available');
             return;
         }
         
         // 获取所有物品
         const objects = this.workspaceCanvas.getAllObjects();
-        console.log('Objects retrieved:', objects);
+        Debug.log('Objects retrieved:', objects);
         
         if (objects.length === 0) {
             this.showNotification('No objects to simulate. Please place objects first.', 'warning', 3000);
@@ -968,7 +968,7 @@ class MechanicalArmSimulator {
             // 更新按钮状态
             this.updateSimulateButton('pause');
         } catch (error) {
-            console.error('Error starting robot simulation:', error);
+            Debug.error('Error starting robot simulation:', error);
             this.showNotification('Failed to start robot simulation: ' + error.message, 'error', 4000);
         }
     }
@@ -987,7 +987,7 @@ class MechanicalArmSimulator {
      * 模拟完成回调
      */
     onSimulationComplete() {
-        console.log('App: Setting button to completed state');
+        Debug.log('App: Setting button to completed state');
         this.updateSimulateButton('completed');
     }
 
@@ -997,7 +997,7 @@ class MechanicalArmSimulator {
     updateSimulateButton(state) {
         const simulateButton = document.getElementById('simulate');
         if (!simulateButton) {
-            console.log('App: simulate button not found!');
+            Debug.log('App: simulate button not found!');
             return;
         }
         
@@ -1022,7 +1022,7 @@ class MechanicalArmSimulator {
         simulateButton.offsetHeight; // 触发重排
         simulateButton.style.display = '';
         
-        console.log(`App: Button updated to "${config.text}" with class "${config.class}"`);
+        Debug.log(`App: Button updated to "${config.text}" with class "${config.class}"`);
     }
 
     /**
@@ -1290,7 +1290,7 @@ class MechanicalArmSimulator {
             });
         }
         
-        console.log('Printer controls bound');
+        Debug.log('Printer controls bound');
     }
 
     /**
@@ -1370,7 +1370,7 @@ class MechanicalArmSimulator {
      * 打印模式切换处理
      */
     async onPrintModeChange(mode) {
-        console.log('Print mode changed to:', mode);
+        Debug.log('Print mode changed to:', mode);
         this.printMode = mode;
         
         const printerControls = document.querySelectorAll('.printer-controls');
@@ -1397,7 +1397,7 @@ class MechanicalArmSimulator {
                 await this.printerManager.loadPrinterConfig();
                 this.updateStepper({ modeCompleted: true, modelCompleted: true, connected: false, printing: false });
             } catch (error) {
-                console.error('Failed to load Ender 3 config:', error);
+                Debug.error('Failed to load Ender 3 config:', error);
             }
 
             // 隐藏3D模拟相关元素
@@ -1519,7 +1519,7 @@ class MechanicalArmSimulator {
             await this.printerManager.connectPrinter();
             // 状态将通过回调更新
         } catch (error) {
-            console.error('Connection failed:', error);
+            Debug.error('Connection failed:', error);
             this.updateConnectionStatus(false);
         }
     }
@@ -1533,7 +1533,7 @@ class MechanicalArmSimulator {
         try {
             await this.printerManager.disconnectPrinter();
         } catch (error) {
-            console.error('Disconnect failed:', error);
+            Debug.error('Disconnect failed:', error);
         }
     }
 
@@ -1594,7 +1594,7 @@ class MechanicalArmSimulator {
             }
             
         } catch (error) {
-            console.error('Failed to start print:', error);
+            Debug.error('Failed to start print:', error);
             this.showNotification('Print failed: ' + error.message, 'error', 4000);
         }
     }
@@ -1769,24 +1769,24 @@ window.debugRobotGripper = function() {
     if (window.app && window.app.robotGripper) {
         window.app.robotGripper.debugSceneObjects();
     } else {
-        console.error('RobotGripper not found. Make sure app is initialized.');
-        console.log('App:', window.app);
-        console.log('RobotGripper:', window.app?.robotGripper);
+        Debug.error('RobotGripper not found. Make sure app is initialized.');
+        Debug.log('App:', window.app);
+        Debug.log('RobotGripper:', window.app?.robotGripper);
     }
 };
 
 window.debugScene = function() {
     if (window.app && window.app.threeJSWorkArea) {
         const scene = window.app.threeJSWorkArea.scene;
-        console.log('=== Scene Children ===');
+        Debug.log('=== Scene Children ===');
         scene.children.forEach((child, i) => {
-            console.log(`${i}:`, child.type, child.name, 'visible:', child.visible);
+            Debug.log(`${i}:`, child.type, child.name, 'visible:', child.visible);
         });
-        console.log('Print Head:', window.app.threeJSWorkArea.printHead);
-        console.log('Print Bed:', window.app.threeJSWorkArea.printBed);
+        Debug.log('Print Head:', window.app.threeJSWorkArea.printHead);
+        Debug.log('Print Bed:', window.app.threeJSWorkArea.printBed);
     }
 };
 
-console.log('Debug functions available:');
-console.log('  debugRobotGripper() - Debug robot gripper and scene');
-console.log('  debugScene() - Quick scene overview');
+Debug.log('Debug functions available:');
+Debug.log('  debugRobotGripper() - Debug robot gripper and scene');
+Debug.log('  debugScene() - Quick scene overview');

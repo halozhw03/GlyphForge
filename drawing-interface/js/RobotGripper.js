@@ -31,7 +31,7 @@ class RobotGripper {
         
         // 监听模型加载完成事件
         window.addEventListener('printerModelLoaded', () => {
-            console.log('RobotGripper: Printer model loaded event received');
+            Debug.log('RobotGripper: Printer model loaded event received');
             // 如果当前是 Robot Mode，确保打印头可见并隐藏旧机械臂
             if (this.isRobotMode) {
                 this.enableRobotMode();
@@ -43,7 +43,7 @@ class RobotGripper {
      * 隐藏场景中所有旧机械臂的 Mesh
      */
     hideOldGripperMeshes() {
-        console.log('Hiding old gripper meshes...');
+        Debug.log('Hiding old gripper meshes...');
         
         // 旧机械臂的特征颜色
         const gripperColors = [0x2c5282, 0x4a90e2, 0x666666, 0x333333, 0x00ff00];
@@ -54,14 +54,14 @@ class RobotGripper {
             if (obj.isMesh && obj.name === '' && obj.material && obj.material.color) {
                 const color = obj.material.color.getHex();
                 if (gripperColors.includes(color)) {
-                    console.log(`Hiding old gripper mesh with color #${color.toString(16).padStart(6, '0')}`);
+                    Debug.log(`Hiding old gripper mesh with color #${color.toString(16).padStart(6, '0')}`);
                     obj.visible = false;
                     hiddenCount++;
                 }
             }
         });
         
-        console.log(`Hidden ${hiddenCount} old gripper meshes`);
+        Debug.log(`Hidden ${hiddenCount} old gripper meshes`);
     }
     
     /**
@@ -74,23 +74,23 @@ class RobotGripper {
         // 初始化抓取状态
         this.gripperState.position = { x: 0, y: 100, z: 0 };
         
-        console.log('Robot gripper initialized to use print head');
+        Debug.log('Robot gripper initialized to use print head');
     }
     
     /**
      * 切换到机器人模式
      */
     enableRobotMode() {
-        console.log('Enabling robot mode...');
+        Debug.log('Enabling robot mode...');
         this.isRobotMode = true;
         
         // 隐藏旧的机械臂（如果存在）
         if (this.gripperArm) {
-            console.log('Hiding old gripperArm');
+            Debug.log('Hiding old gripperArm');
             this.gripperArm.visible = false;
         }
         if (this.gripper) {
-            console.log('Hiding old gripper');
+            Debug.log('Hiding old gripper');
             this.gripper.visible = false;
         }
         
@@ -103,13 +103,13 @@ class RobotGripper {
             
             // 确保打印头及其所有父对象都可见
             this.printHead.visible = true;
-            console.log('Print head set visible:', this.printHead.visible);
+            Debug.log('Print head set visible:', this.printHead.visible);
             
             // 遍历父对象确保都可见
             let parent = this.printHead.parent;
             let level = 0;
             while (parent) {
-                console.log(`Setting parent ${level} visible:`, parent.type, parent.name);
+                Debug.log(`Setting parent ${level} visible:`, parent.type, parent.name);
                 parent.visible = true;
                 parent = parent.parent;
                 level++;
@@ -120,15 +120,15 @@ class RobotGripper {
                 child.visible = true;
             });
             
-            console.log('Print head and all parents/children set visible');
+            Debug.log('Print head and all parents/children set visible');
         } else {
-            console.error('Print head not found in threeJSWorkArea');
+            Debug.error('Print head not found in threeJSWorkArea');
         }
         
         // 更新指示灯
         this.updateGripperLight('ready');
         
-        console.log('Robot mode enabled, using print head as gripper');
+        Debug.log('Robot mode enabled, using print head as gripper');
     }
     
     /**
@@ -148,10 +148,10 @@ class RobotGripper {
         // 保持打印头可见（Drawing Mode也需要）
         if (this.threeJSWorkArea.printHead) {
             this.threeJSWorkArea.printHead.visible = true;
-            console.log('Print head set visible in drawing mode:', this.threeJSWorkArea.printHead.visible);
+            Debug.log('Print head set visible in drawing mode:', this.threeJSWorkArea.printHead.visible);
         }
         
-        console.log('Robot mode disabled');
+        Debug.log('Robot mode disabled');
     }
     
     /**
@@ -237,7 +237,7 @@ class RobotGripper {
             dimensions: obj.dimensions ? { ...obj.dimensions } : null
         }));
         this.rebuildObjects();
-        console.log('Objects set for robot simulation:', this.objects.length);
+        Debug.log('Objects set for robot simulation:', this.objects.length);
     }
 
     setWorkArea(workArea) {
@@ -324,7 +324,7 @@ class RobotGripper {
         
         // 获取 bed 信息（与 Drawing Mode 一致）
         if (!this.threeJSWorkArea.printBed) {
-            console.error("Cannot create object, print bed not found.");
+            Debug.error("Cannot create object, print bed not found.");
             return null;
         }
         
@@ -385,7 +385,7 @@ class RobotGripper {
      */
     async startRobotSimulation() {
         if (this.objects.length === 0) {
-            console.log('No objects to simulate');
+            Debug.log('No objects to simulate');
             return;
         }
         
@@ -417,7 +417,7 @@ class RobotGripper {
             this.threeJSWorkArea.onSimulationComplete();
         }
         
-        console.log('Robot simulation completed');
+        Debug.log('Robot simulation completed');
     }
     
     /**
@@ -443,7 +443,7 @@ class RobotGripper {
                 // 计算该物体顶部的高度
                 const topHeight = obj.mesh.position.y + (obj.size.height / 2);
                 maxHeight = Math.max(maxHeight, topHeight);
-                console.log(`Found object at target position: ${obj.id}, top height: ${topHeight}`);
+                Debug.log(`Found object at target position: ${obj.id}, top height: ${topHeight}`);
             }
         }
         
@@ -454,7 +454,7 @@ class RobotGripper {
      * 执行抓取和放置任务
      */
     async executePickAndPlace(objectData) {
-        console.log('Executing pick and place for object:', objectData.id);
+        Debug.log('Executing pick and place for object:', objectData.id);
         
         // 1. 移动到物品上方
         await this.moveGripperTo({
@@ -498,7 +498,7 @@ class RobotGripper {
             stackHeight + objectData.size.height / 2 : 
             bedY + objectData.size.height / 2;
         
-        console.log(`Bed Y: ${bedY}, Stack height: ${stackHeight}, Final Y position: ${finalY}`);
+        Debug.log(`Bed Y: ${bedY}, Stack height: ${stackHeight}, Final Y position: ${finalY}`);
         
         // 更新目标位置的Y坐标
         objectData.targetPosition.y = finalY;
@@ -627,7 +627,7 @@ class RobotGripper {
                     setTimeout(waitForGrip, 50);
                     return;
                 }
-                console.log('Object gripped:', objectData.id);
+                Debug.log('Object gripped:', objectData.id);
                 resolve();
             };
             setTimeout(waitForGrip, 300);
@@ -659,8 +659,8 @@ class RobotGripper {
             // 更新指示灯
             this.updateGripperLight('working');
             
-            console.log(`Object ${objectData.id} released at position:`, objectData.mesh.position);
-            console.log(`Stack level: Y = ${objectData.targetPosition.y}, Base = ${objectData.size.height / 2}`);
+            Debug.log(`Object ${objectData.id} released at position:`, objectData.mesh.position);
+            Debug.log(`Stack level: Y = ${objectData.targetPosition.y}, Base = ${objectData.size.height / 2}`);
             
             // 模拟释放时间（支持暂停）
             const waitForRelease = () => {
@@ -668,7 +668,7 @@ class RobotGripper {
                     setTimeout(waitForRelease, 50);
                     return;
                 }
-                console.log('Object released:', objectData.id);
+                Debug.log('Object released:', objectData.id);
                 resolve();
             };
             setTimeout(waitForRelease, 300);
@@ -695,7 +695,7 @@ class RobotGripper {
             light.position.set(20, 10, -15); 
             
             this.printHead.add(light);
-            console.log('Created a new, independent indicator light for the gripper.');
+            Debug.log('Created a new, independent indicator light for the gripper.');
         }
         
         try {
@@ -738,7 +738,7 @@ class RobotGripper {
                     break;
             }
         } catch (error) {
-            console.warn('Failed to update gripper light:', error);
+            Debug.warn('Failed to update gripper light:', error);
         }
     }
     
@@ -755,7 +755,7 @@ class RobotGripper {
     pauseSimulation() {
         this.isPaused = true;
         this.updateGripperLight('paused');
-        console.log('Robot simulation paused');
+        Debug.log('Robot simulation paused');
     }
 
     /**
@@ -764,7 +764,7 @@ class RobotGripper {
     resumeSimulation() {
         this.isPaused = false;
         this.updateGripperLight('working');
-        console.log('Robot simulation resumed');
+        Debug.log('Robot simulation resumed');
     }
 
     /**
@@ -791,7 +791,7 @@ class RobotGripper {
         this.gripperState.isGripping = false;
         this.gripperState.grippedObject = null;
         
-        console.log('Robot simulation stopped');
+        Debug.log('Robot simulation stopped');
     }
     
     /**
@@ -828,11 +828,11 @@ class RobotGripper {
      * 调试工具：打印场景中所有对象的信息
      */
     debugSceneObjects() {
-        console.log('=== Scene Debug Info ===');
-        console.log('Total children:', this.scene.children.length);
+        Debug.log('=== Scene Debug Info ===');
+        Debug.log('Total children:', this.scene.children.length);
         
         this.scene.children.forEach((child, index) => {
-            console.log(`\nChild ${index}:`, {
+            Debug.log(`\nChild ${index}:`, {
                 type: child.type,
                 name: child.name,
                 visible: child.visible,
@@ -844,7 +844,7 @@ class RobotGripper {
             // 如果是 Group，显示子对象
             if (child.isGroup && child.children.length > 0) {
                 child.children.forEach((subChild, subIndex) => {
-                    console.log(`  Sub ${subIndex}:`, {
+                    Debug.log(`  Sub ${subIndex}:`, {
                         type: subChild.type,
                         name: subChild.name,
                         visible: subChild.visible,
@@ -855,9 +855,9 @@ class RobotGripper {
             }
         });
         
-        console.log('\n=== Print Head Info ===');
+        Debug.log('\n=== Print Head Info ===');
         if (this.threeJSWorkArea.printHead) {
-            console.log('Print head found:', {
+            Debug.log('Print head found:', {
                 name: this.threeJSWorkArea.printHead.name,
                 visible: this.threeJSWorkArea.printHead.visible,
                 parent: this.threeJSWorkArea.printHead.parent ? this.threeJSWorkArea.printHead.parent.name : 'none',
@@ -868,7 +868,7 @@ class RobotGripper {
             let parent = this.threeJSWorkArea.printHead.parent;
             let level = 0;
             while (parent) {
-                console.log(`Parent ${level}:`, {
+                Debug.log(`Parent ${level}:`, {
                     type: parent.type,
                     name: parent.name,
                     visible: parent.visible
@@ -877,10 +877,10 @@ class RobotGripper {
                 level++;
             }
         } else {
-            console.log('Print head not found!');
+            Debug.log('Print head not found!');
         }
         
-        console.log('======================');
+        Debug.log('======================');
     }
 }
 
@@ -890,8 +890,8 @@ if (typeof window !== 'undefined') {
         if (window.app && window.app.robotGripper) {
             window.app.robotGripper.debugSceneObjects();
         } else {
-            console.error('RobotGripper not found. Make sure app is initialized.');
+            Debug.error('RobotGripper not found. Make sure app is initialized.');
         }
     };
-    console.log('Debug tool available: call debugRobotGripper() in console');
+    Debug.log('Debug tool available: call debugRobotGripper() in console');
 }

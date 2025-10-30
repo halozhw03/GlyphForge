@@ -4,7 +4,7 @@ var codeEditor = {
   allCode: null,
   appendCode: function (toAppend) {
     // if the same code doesnt already exist
-    if (this.allCode.indexOf(toAppend) === -1) {
+    if (this.allCode && this.allCode.indexOf(toAppend) === -1) {
       var sketchDOM = $(this.allCode);
 
       // find the fabPreview element
@@ -35,12 +35,12 @@ var editor = CodeMirror(document.getElementById("code"), {
 
 // initialize the editor
 if (sessionStorage.getItem("fabPreview")) {
-  console.log("sessionstorage"); // this is run when you refresh the page
+  // Debug logging removed for production
   codeEditor.allCode = sessionStorage.getItem("fabPreview");
   editor.setValue(codeEditor.allCode);
   hideHTMLFromEditor();
 } else {
-  console.log("else"); // this is run the first time its opened
+  // Debug logging removed for production
   $.get("js/fabPreview.html", function (data) {
     sessionStorage.setItem("fabPreview", data);
     codeEditor.allCode = data;
@@ -101,7 +101,7 @@ hideHTMLFromEditor();
 
 // functionality inspired from hydra, credit: https://github.com/hydra-synth/hydra/blob/aeea1cd794f9943356a5079b4911e9f8c3278bdc/frontend/web-editor/src/views/editor/editor.js#L122
 function flashCode(start, end) {
-  console.log("flash code!");
+  // Debug logging removed for production
   // highlight the code when you run it
   if (!start) start = { line: editor.firstLine(), ch: 0 };
   if (!end) end = { line: editor.lastLine() + 1, ch: 0 };

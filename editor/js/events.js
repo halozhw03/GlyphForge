@@ -56,7 +56,7 @@ function handleFileSelect(event) {
 }
 
 function handleFileLoad(event) {
-  console.log(event.target.result);
+  // Debug logging removed for production
   editor.setValue(event.target.result);
 }
 
