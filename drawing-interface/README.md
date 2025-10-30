@@ -1,1 +1,0 @@
-- **Ender 3 Support** - Direct USB connection to physical printers
