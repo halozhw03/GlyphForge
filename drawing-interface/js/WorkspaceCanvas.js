@@ -1,6 +1,6 @@
 /**
- * WorkspaceCanvas - 机器人模式下的工作空间画布
- * 用于处理物品的放置和目标位置的设定
+ * WorkspaceCanvas - Workspace canvas in robot mode
+ * Handles object placement and target position setting
  */
 class WorkspaceCanvas {
     constructor(canvasId) {
@@ -11,31 +11,31 @@ class WorkspaceCanvas {
         this.isSettingTarget = false;
         this.currentObjectForTarget = null;
         
-        // 初始化状态标志
+        // Initialize state flags
         this.isPaperInitialized = false;
-        this.useFallback = true; // 默认使用备用系统，直到Paper.js成功初始化
+        this.useFallback = true; // Default to fallback system until Paper.js successfully initializes
         this.paperScope = null;
         
-        // Bed 长宽比（默认值，会在收到事件后更新）
+        // Bed aspect ratio (default value, will be updated when event is received)
         this.bedAspectRatio = null;
 
         if (!this.canvasElement) {
             throw new Error(`Canvas element with id '${canvasId}' not found`);
         }
 
-        // 监听 bed 长宽比事件，动态调整容器比例
+        // Listen for bed aspect ratio event to dynamically adjust container ratio
         window.addEventListener('bedAspectRatioCalculated', (e) => {
             this.bedAspectRatio = e.detail.aspectRatio;
             Debug.log('WorkspaceCanvas: Bed aspect ratio received:', this.bedAspectRatio);
             
-            // 设置容器的 aspect-ratio
+            // Set container aspect-ratio
             const container = this.canvasElement.parentElement;
             if (container && this.bedAspectRatio) {
                 container.style.aspectRatio = `${this.bedAspectRatio}`;
                 Debug.log('Container aspect ratio set to:', this.bedAspectRatio);
             }
             
-            // 重新调整canvas大小
+            // Resize canvas
             setTimeout(() => {
                 if (this.isPaperInitialized) {
                     this.resize();
@@ -46,14 +46,14 @@ class WorkspaceCanvas {
             }, 100);
         });
 
-        // 初始化工具显示
+        // Initialize tool display
         this.updateToolDisplay();
 
         this.initPaperJS();
     }
     
     /**
-     * 获取对象的基础尺寸（用于2D显示和3D模拟的默认值）
+     * Get base dimensions for objects (default values for 2D display and 3D simulation)
      */
     getBaseDimensions(objectType) {
         const defaults = {
@@ -94,7 +94,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 生成对象尺寸，对于cube会引入随机缩放
+     * Generate object dimensions, introduces random scaling for cubes
      */
     generateObjectDimensions(objectType) {
         const dimensions = this.getBaseDimensions(objectType);
@@ -124,7 +124,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 生成cube的随机缩放比例
+     * Generate random scale factor for cube
      */
     generateCubeScale() {
         const minScale = 0.6;
@@ -133,75 +133,75 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 初始化Paper.js
+     * Initialize Paper.js
      */
     initPaperJS() {
-        // 延迟初始化，确保canvas元素已正确渲染
+        // Delay initialization to ensure canvas element is properly rendered
         setTimeout(() => {
             try {
                 Debug.log('Initializing Paper.js for WorkspaceCanvas...');
                 Debug.log('Canvas element:', this.canvasElement);
                 Debug.log('Canvas dimensions:', this.canvasElement.clientWidth, 'x', this.canvasElement.clientHeight);
                 
-                // 为工作空间画布创建独立的Paper.js范围
+                // Create independent Paper.js scope for workspace canvas
                 this.paperScope = new paper.PaperScope();
                 this.paperScope.setup(this.canvasElement);
                 
-                // 激活这个范围
+                // Activate this scope
                 this.paperScope.activate();
                 
-                // 获取画布尺寸，确保有默认值和正确比例
+                // Get canvas dimensions, ensure default values and correct ratio
                 const containerWidth = this.canvasElement.clientWidth || 400;
                 const containerHeight = this.canvasElement.clientHeight || 300;
                 
-                // 直接使用容器的全部可用空间
+                // Use all available space of container directly
                 const width = containerWidth;
                 const height = containerHeight;
                 
-                // 处理高DPR屏幕：内部像素=CSS*DPR，并缩放视图
+                // Handle high DPR screens: internal pixels = CSS * DPR, and scale view
                 const dpr = window.devicePixelRatio || 1;
                 this.dpr = dpr;
                 this.canvasElement.width = Math.round(width * dpr);
                 this.canvasElement.height = Math.round(height * dpr);
                 
-                // 记录CSS尺寸，统一坐标基准
+                // Record CSS dimensions, unified coordinate basis
                 this.canvasWidth = width;
                 this.canvasHeight = height;
                 
-                // 设置视图大小为CSS逻辑尺寸
+                // Set view size to CSS logical dimensions
                 this.paperScope.view.viewSize = new this.paperScope.Size(width, height);
-                // 通过设置view的缩放，确保鼠标坐标与CSS坐标一致
+                // Ensure mouse coordinates match CSS coordinates by setting view scale
                 this.paperScope.view.scale(1);
                 
-                // 为2D绘图上下文应用DPR缩放，保证绘制与点击坐标一致
+                // Apply DPR scaling to 2D drawing context to ensure drawing and click coordinates match
                 const ctx = this.canvasElement.getContext('2d');
                 if (ctx && ctx.setTransform) {
                     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                 }
                 
-                // 绘制工作区域边界
+                // Draw work area boundary
                 this.drawWorkAreaBoundary();
                 
                 Debug.log('WorkspaceCanvas Paper.js initialized successfully with size:', width, 'x', height);
                 
-                // 初始化完成后绑定事件
+                // Bind events after initialization completes
                 this.bindEvents();
                 this.isPaperInitialized = true;
-                this.useFallback = false; // 使用统一事件系统，但Paper.js可用于绘制
+                this.useFallback = false; // Use unified event system, but Paper.js can be used for drawing
 
-                // 确保画布有正确的初始显示
+                // Ensure canvas has correct initial display
                 this.ensureCanvasDisplay();
                 
             } catch (error) {
                 Debug.error('Failed to initialize WorkspaceCanvas Paper.js:', error);
-                // 使用统一的事件处理系统
+                // Use unified event handling system
                 this.initUnifiedEventSystem();
             }
-        }, 200); // 增加延迟时间
+        }, 200); // Increased delay time
     }
     
     /**
-     * 初始化统一事件系统
+     * Initialize unified event system
      */
     initUnifiedEventSystem() {
         Debug.log('Initializing unified event system for WorkspaceCanvas');
@@ -209,42 +209,42 @@ class WorkspaceCanvas {
         this.useFallback = true;
         Debug.log('Using fallback system:', this.useFallback);
 
-        // 设置画布尺寸
+        // Set canvas size
         this.setupCanvasSize();
 
-        // 绘制基础网格
+        // Draw basic grid
         this.drawBasicGrid();
 
-        // 绑定统一事件处理
+        // Bind unified event handlers
         this.bindUnifiedEvents();
 
-        // 确保画布有正确的初始显示
+        // Ensure canvas has correct initial display
         this.ensureCanvasDisplay();
     }
     
     /**
-     * 设置画布尺寸 - 简化版本，直接使用容器尺寸（与 DrawingCanvas 一致）
+     * Set canvas size - simplified version, directly use container size (consistent with DrawingCanvas)
      */
     setupCanvasSize() {
-        // 直接使用容器的客户端尺寸（CSS会处理aspect ratio）
+        // Directly use container client dimensions (CSS handles aspect ratio)
         const width = this.canvasElement.clientWidth || 400;
         const height = this.canvasElement.clientHeight || 300;
 
-        // 处理高DPR屏幕
+        // Handle high DPR screens
         const dpr = window.devicePixelRatio || 1;
         this.dpr = dpr;
 
-        // 设置canvas内部像素大小（物理像素）
+        // Set canvas internal pixel size (physical pixels)
         this.canvasElement.width = Math.round(width * dpr);
         this.canvasElement.height = Math.round(height * dpr);
 
-        // 缩放上下文，使后续绘制仍然使用CSS单位
+        // Scale context so subsequent drawing still uses CSS units
         const ctx = this.canvasElement.getContext('2d');
         if (ctx && ctx.setTransform) {
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
-        // 保存CSS尺寸（用于逻辑计算）
+        // Save CSS dimensions (for logical calculations)
         this.canvasWidth = width;
         this.canvasHeight = height;
 
@@ -252,26 +252,26 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 绘制基础网格 - 与DrawingCanvas完全一致
+     * Draw basic grid - completely consistent with DrawingCanvas
      */
     drawBasicGrid() {
         const ctx = this.canvasElement.getContext('2d');
         const width = this.canvasWidth;
         const height = this.canvasHeight;
 
-        // 清除画布
+        // Clear canvas
         ctx.clearRect(0, 0, width, height);
 
-        // 不再绘制边界线，与DrawingCanvas保持一致
+        // No longer draw boundary lines, consistent with DrawingCanvas
 
-        // 绘制网格 - 与DrawingCanvas保持一致的样式
-        ctx.strokeStyle = '#f1f5f9';  // 使用与DrawingCanvas相同的网格颜色
-        ctx.lineWidth = 0.5;         // 使用与DrawingCanvas相同的线宽
+        // Draw grid - consistent style with DrawingCanvas
+        ctx.strokeStyle = '#f1f5f9';  // Use same grid color as DrawingCanvas
+        ctx.lineWidth = 0.5;         // Use same line width as DrawingCanvas
         ctx.setLineDash([]);
 
-        const gridSize = 20;       // 使用与DrawingCanvas相同的网格间距
+        const gridSize = 20;       // Use same grid spacing as DrawingCanvas
 
-        // 垂直线 - 覆盖整个画布
+        // Vertical lines - cover entire canvas
         for (let x = 0; x <= width; x += gridSize) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
@@ -279,7 +279,7 @@ class WorkspaceCanvas {
             ctx.stroke();
         }
 
-        // 水平线 - 覆盖整个画布
+        // Horizontal lines - cover entire canvas
         for (let y = 0; y <= height; y += gridSize) {
             ctx.beginPath();
             ctx.moveTo(0, y);
@@ -289,21 +289,21 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 绑定统一事件处理
+     * Bind unified event handlers
      */
     bindUnifiedEvents() {
-        // 移除旧的事件监听器
+        // Remove old event listeners
         this.canvasElement.removeEventListener('click', this.handleCanvasClick);
         this.canvasElement.removeEventListener('mousemove', this.handleCanvasMouseMove);
         
-        // 绑定新的事件处理器
+        // Bind new event handlers
         this.handleCanvasClick = this.handleCanvasClick.bind(this);
         this.handleCanvasMouseMove = this.handleCanvasMouseMove.bind(this);
         
         this.canvasElement.addEventListener('click', this.handleCanvasClick);
         this.canvasElement.addEventListener('mousemove', this.handleCanvasMouseMove);
         
-        // 窗口调整事件
+        // Window resize event
         window.addEventListener('resize', () => {
             setTimeout(() => this.resize(), 100);
         });
@@ -314,13 +314,13 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 统一的画布点击处理器
+     * Unified canvas click handler
      */
     handleCanvasClick(e) {
         const point = this.getAccurateMousePosition(e);
         Debug.log('Canvas click at:', point, 'tool:', this.currentTool);
 
-        // 检查是否在工作区域内
+        // Check if point is in work area
         if (!this.isPointInWorkAreaUnified(point)) {
             Debug.log('Click outside work area, ignoring');
             return;
@@ -347,7 +347,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 统一的鼠标移动处理器
+     * Unified mouse move handler
      */
     handleCanvasMouseMove(e) {
         const point = this.getAccurateMousePosition(e);
@@ -355,7 +355,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 获取精确的鼠标位置
+     * Get accurate mouse position
      */
     getAccurateMousePosition(e) {
         const rect = this.canvasElement.getBoundingClientRect();
@@ -367,7 +367,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 统一的工作区域检查 - 与DrawingCanvas一致（整个画布都可用）
+     * Unified work area check - consistent with DrawingCanvas (entire canvas is available)
      */
     isPointInWorkAreaUnified(point) {
         const width = this.canvasWidth || this.canvasElement.width;
@@ -380,7 +380,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 统一的放置物品方法
+     * Unified place object method
      */
     placeObjectUnified(point) {
         Debug.log('Placing object (unified) at:', point, 'type:', this.selectedObjectType);
@@ -398,10 +398,10 @@ class WorkspaceCanvas {
         this.objects.push(objectData);
         this.updateObjectInfo();
         
-        // 绘制物品到画布
+        // Draw object to canvas
         this.drawObjectToCanvas(objectData);
         
-        // 自动切换到目标设置模式
+        // Automatically switch to target setting mode
         this.currentObjectForTarget = objectData;
         this.autoSwitchToTargetMode();
         
@@ -410,7 +410,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 统一的目标设置方法
+     * Unified target position setting method
      */
     setTargetPositionUnified(point) {
         if (!this.currentObjectForTarget) {
@@ -422,27 +422,27 @@ class WorkspaceCanvas {
             this.currentObjectForTarget = nearestObject;
         }
         
-        // 设置目标位置
+        // Set target position
         this.currentObjectForTarget.targetPosition = { x: point.x, y: point.y };
         this.currentObjectForTarget.state = 'targeted';
         
-        // 重新绘制画布
+        // Redraw canvas
         this.redrawCanvas();
         
         this.updateObjectInfo();
         Debug.log('Target position set (unified) for:', this.currentObjectForTarget.id);
         
-        // 自动切换回放置模式
+        // Automatically switch back to placement mode
         this.autoSwitchToPlaceMode();
         
-        // 重置状态
+        // Reset state
         this.currentObjectForTarget = null;
         
         this.dispatchEvent('targetSet', this.currentObjectForTarget);
     }
     
     /**
-     * 统一的删除物品方法
+     * Unified delete object method
      */
     deleteObjectAtUnified(point) {
         Debug.log('deleteObjectAtUnified called with point:', point);
@@ -456,7 +456,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 绘制物品到画布
+     * Draw object to canvas
      */
     drawObjectToCanvas(objectData) {
         const ctx = this.canvasElement.getContext('2d');
@@ -472,7 +472,7 @@ class WorkspaceCanvas {
         const displayRadius = dims.displayRadius ?? displayWidth / 2;
         const labelOffset = (displayHeight ?? (displayRadius * 2)) / 2 + 10;
         
-        // 根据状态设置颜色
+        // Set color based on state
         let fillColor, strokeColor;
         switch (objectData.state) {
             case 'placed':
@@ -496,7 +496,7 @@ class WorkspaceCanvas {
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 2;
         
-        // 根据类型绘制不同形状
+        // Draw different shapes based on type
         switch (objectData.type) {
             case 'cube':
                 ctx.fillRect(
@@ -540,26 +540,26 @@ class WorkspaceCanvas {
                 break;
         }
         
-        // 绘制标签
+        // Draw label
         ctx.fillStyle = '#000';
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(objectData.type.toUpperCase(), point.x, point.y - labelOffset);
         
-        // 如果有目标位置，绘制目标和连接线
+        // If target position exists, draw target and connection line
         if (objectData.targetPosition) {
             this.drawTargetAndConnection(objectData);
         }
     }
     
     /**
-     * 绘制目标标记和连接线
+     * Draw target marker and connection line
      */
     drawTargetAndConnection(objectData) {
         const ctx = this.canvasElement.getContext('2d');
         const target = objectData.targetPosition;
         
-        // 绘制连接线
+        // Draw connection line
         ctx.strokeStyle = '#9f7aea';
         ctx.lineWidth = 2;
         ctx.setLineDash([3, 3]);
@@ -569,14 +569,14 @@ class WorkspaceCanvas {
         ctx.stroke();
         ctx.setLineDash([]);
         
-        // 绘制目标标记
+        // Draw target marker
         ctx.strokeStyle = '#e53e3e';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(target.x, target.y, 8, 0, 2 * Math.PI);
         ctx.stroke();
         
-        // 绘制十字标记
+        // Draw cross marker
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(target.x - 6, target.y);
@@ -587,20 +587,20 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 重新绘制整个画布
+     * Redraw entire canvas
      */
     redrawCanvas() {
-        // 重绘基础网格
+        // Redraw basic grid
         this.drawBasicGrid();
         
-        // 重绘所有物品
+        // Redraw all objects
         this.objects.forEach(obj => {
             this.drawObjectToCanvas(obj);
         });
     }
     
     /**
-     * 寻找最近的物品（统一版本）
+     * Find nearest object (unified version)
      */
     findNearestObjectUnified(point) {
         let nearest = null;
@@ -636,7 +636,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 删除物品（统一版本）
+     * Delete object (unified version)
      */
     deleteObjectUnified(objectId) {
         Debug.log('deleteObjectUnified called for objectId:', objectId);
@@ -658,7 +658,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 更新光标样式（统一版本）
+     * Update cursor style (unified version)
      */
     updateCursorUnified(point) {
         if (!this.isPointInWorkAreaUnified(point)) {
@@ -682,7 +682,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 绑定基础事件（备用方案）
+     * Bind basic events (fallback solution)
      */
     bindBasicEvents() {
         this.canvasElement.addEventListener('click', (e) => {
@@ -694,7 +694,7 @@ class WorkspaceCanvas {
             
             Debug.log('Fallback click at:', point, 'tool:', this.currentTool);
             
-            // 简单的边界检查
+            // Simple boundary check
             const margin = 20;
             if (point.x > margin && point.x < rect.width - margin && 
                 point.y > margin && point.y < rect.height - margin) {
@@ -715,7 +715,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 备用放置物品方法
+     * Fallback place object method
      */
     placeObjectFallback(point) {
         Debug.log('Placing object (fallback) at:', point);
@@ -738,12 +738,12 @@ class WorkspaceCanvas {
         Debug.log('Current objects count after placement:', this.objects.length);
         this.dispatchEvent('objectPlaced', objectData);
 
-        // 重新绘制整个canvas以确保显示正确
+        // Redraw entire canvas to ensure correct display
         this.redrawCanvasFallback();
     }
     
     /**
-     * 备用绘制物品方法
+     * Fallback draw object method
      */
     drawObjectFallback(objectData) {
         const ctx = this.canvasElement.getContext('2d');
@@ -758,13 +758,13 @@ class WorkspaceCanvas {
         const displayRadius = dims.displayRadius ?? displayWidth / 2;
         const labelOffset = (displayHeight ?? (displayRadius * 2)) / 2 + 10;
 
-        // 根据状态设置颜色
+        // Set color based on state
         let fillColor, strokeColor;
         if (objectData.targetPosition) {
-            fillColor = '#ff3b30'; // 已设置目标 - 亮红色
+            fillColor = '#ff3b30'; // Target set - bright red
             strokeColor = '#9b2c2c';
         } else {
-            fillColor = '#ff1d48'; // 默认 - 高饱和红色
+            fillColor = '#ff1d48'; // Default - high saturation red
             strokeColor = '#991b1b';
         }
 
@@ -772,7 +772,7 @@ class WorkspaceCanvas {
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 2;
 
-        // 根据类型绘制不同形状
+        // Draw different shapes based on type
         switch (objectData.type) {
             case 'cube':
                 ctx.fillRect(
@@ -829,7 +829,7 @@ class WorkspaceCanvas {
                 );
         }
 
-        // 绘制标签
+        // Draw label
         ctx.fillStyle = '#000';
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
@@ -839,9 +839,9 @@ class WorkspaceCanvas {
             objectData.position.y - labelOffset
         );
 
-        // 如果有目标位置，绘制目标标记和连接线
+        // If target position exists, draw target marker and connection line
         if (objectData.targetPosition) {
-            // 绘制连接线
+            // Draw connection line
             ctx.strokeStyle = '#9f7aea';
             ctx.lineWidth = 2;
             ctx.setLineDash([3, 3]);
@@ -851,14 +851,14 @@ class WorkspaceCanvas {
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // 绘制目标标记
+            // Draw target marker
             ctx.strokeStyle = '#e53e3e';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.arc(objectData.targetPosition.x, objectData.targetPosition.y, 8, 0, 2 * Math.PI);
             ctx.stroke();
 
-            // 绘制十字标记
+            // Draw cross marker
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(objectData.targetPosition.x - 6, objectData.targetPosition.y);
@@ -870,23 +870,23 @@ class WorkspaceCanvas {
     }
 
     /**
-     * 备用重新绘制canvas方法
+     * Fallback redraw canvas method
      */
     redrawCanvasFallback() {
-        // 重绘基础网格
+        // Redraw basic grid
         this.drawBasicGrid();
 
-        // 重绘所有物品
+        // Redraw all objects
         this.objects.forEach(obj => {
             this.drawObjectFallback(obj);
         });
     }
     
     /**
-     * 备用设置目标位置方法
+     * Fallback set target position method
      */
     setTargetPositionFallback(point) {
-        // 找到最近的物品
+        // Find nearest object
         let nearest = null;
         let minDistance = Infinity;
 
@@ -903,14 +903,14 @@ class WorkspaceCanvas {
         });
 
         if (minDistance < 50 && nearest) {
-            // 为找到的物品设置目标位置
+            // Set target position for found object
             nearest.targetPosition = { x: point.x, y: point.y };
 
             Debug.log('Target set (fallback) for:', nearest.id);
             this.updateObjectInfo();
             this.dispatchEvent('targetSet', nearest);
 
-            // 重新绘制整个canvas以显示目标标记和连接线
+            // Redraw entire canvas to show target marker and connection line
             this.redrawCanvasFallback();
         } else {
             Debug.log('No object found near point (fallback):', point);
@@ -918,7 +918,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 备用删除物品方法
+     * Fallback delete object method
      */
     deleteObjectAtFallback(point) {
         Debug.log('deleteObjectAtFallback called with point:', point);
@@ -930,7 +930,7 @@ class WorkspaceCanvas {
             return;
         }
 
-        // 找到最近的物品
+        // Find nearest object
         let nearest = null;
         let minDistance = Infinity;
 
@@ -950,16 +950,16 @@ class WorkspaceCanvas {
 
         Debug.log('Min distance found:', minDistance, 'Threshold: 30');
 
-        // 减小阈值距离，使删除更精确
+        // Reduce threshold distance for more precise deletion
         if (minDistance < 30 && nearest) {
             Debug.log('Deleting object:', nearest.id);
-            // 从数组中移除物品
+            // Remove object from array
             const index = this.objects.findIndex(obj => obj.id === nearest.id);
             if (index !== -1) {
                 this.objects.splice(index, 1);
                 this.updateObjectInfo();
 
-                // 重新绘制canvas（备用系统）
+                // Redraw canvas (fallback system)
                 this.redrawCanvasFallback();
 
                 Debug.log('Object deleted (fallback):', nearest.id);
@@ -973,78 +973,78 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 绘制工作区域 - 与DrawingCanvas保持一致（无边界线）
+     * Draw work area - consistent with DrawingCanvas (no boundary lines)
      */
     drawWorkAreaBoundary() {
         const bounds = this.paperScope.view.bounds;
         
-        // 不再绘制边界线，与DrawingCanvas保持一致
-        // 直接绘制全画布网格
+        // No longer draw boundary lines, consistent with DrawingCanvas
+        // Draw full canvas grid directly
         this.drawGrid();
         
-        // 设置工作区域为整个画布（用于点击检测）
+        // Set work area to entire canvas (for click detection)
         this.workAreaBounds = {
             bounds: bounds
         };
     }
     
     /**
-     * 绘制网格 - 与DrawingCanvas完全一致
+     * Draw grid - completely consistent with DrawingCanvas
      */
     drawGrid(workArea) {
-        const gridSize = 20;          // 与DrawingCanvas相同的网格间距
-        const gridColor = '#f1f5f9';  // 与DrawingCanvas相同的网格颜色
+        const gridSize = 20;          // Same grid spacing as DrawingCanvas
+        const gridColor = '#f1f5f9';  // Same grid color as DrawingCanvas
         const bounds = this.paperScope.view.bounds;
         
-        // 创建网格组
+        // Create grid group
         const gridGroup = new this.paperScope.Group();
         gridGroup.name = 'grid';
         
-        // 垂直线 - 覆盖整个画布
+        // Vertical lines - cover entire canvas
         for (let x = 0; x <= bounds.width; x += gridSize) {
             const line = new this.paperScope.Path.Line(
                 new this.paperScope.Point(x, 0),
                 new this.paperScope.Point(x, bounds.height)
             );
             line.strokeColor = gridColor;
-            line.strokeWidth = 0.5;  // 与DrawingCanvas相同的线宽
+            line.strokeWidth = 0.5;  // Same line width as DrawingCanvas
             gridGroup.addChild(line);
         }
 
-        // 水平线 - 覆盖整个画布
+        // Horizontal lines - cover entire canvas
         for (let y = 0; y <= bounds.height; y += gridSize) {
             const line = new this.paperScope.Path.Line(
                 new this.paperScope.Point(0, y),
                 new this.paperScope.Point(bounds.width, y)
             );
             line.strokeColor = gridColor;
-            line.strokeWidth = 0.5;  // 与DrawingCanvas相同的线宽
+            line.strokeWidth = 0.5;  // Same line width as DrawingCanvas
             gridGroup.addChild(line);
         }
         
-        // 将网格发送到最底层
+        // Send grid to back
         gridGroup.sendToBack();
     }
     
     
     /**
-     * 绑定事件
+     * Bind events
      */
     bindEvents() {
-        // 为了避免与DrawingCanvas的Paper.js scope冲突，
-        // WorkspaceCanvas统一使用自定义事件系统
+        // To avoid conflicts with DrawingCanvas's Paper.js scope,
+        // WorkspaceCanvas uses unified custom event system
         Debug.log('WorkspaceCanvas: Using unified event system to avoid Paper.js conflicts');
         this.bindUnifiedEvents();
     }
     
     /**
-     * 处理鼠标按下事件 - Paper.js版本
+     * Handle mouse down event - Paper.js version
      */
     handleMouseDown(event) {
         const point = event.point;
         Debug.log('Mouse down at point (Paper.js):', point, 'current tool:', this.currentTool);
         
-        // 检查是否在工作区域内
+        // Check if point is in work area
         const inWorkArea = this.isPointInWorkArea(point);
         Debug.log('Point in work area:', inWorkArea);
         
@@ -1071,15 +1071,15 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 处理鼠标移动事件 - Paper.js版本
+     * Handle mouse move event - Paper.js version
      */
     handleMouseMove(event) {
-        // 更新光标样式
+        // Update cursor style
         this.updateCursor(event.point);
     }
     
     /**
-     * 检查点是否在工作区域内 - 与DrawingCanvas一致（整个画布都可用）
+     * Check if point is in work area - consistent with DrawingCanvas (entire canvas is available)
      */
     isPointInWorkArea(point) {
         if (!this.workAreaBounds) {
@@ -1092,7 +1092,7 @@ class WorkspaceCanvas {
     }
     
     /**
-     * 放置物品
+     * Place object
      */
     placeObject(point) {
         Debug.log('Placing object at point:', point, 'type:', this.selectedObjectType);
@@ -1103,7 +1103,7 @@ class WorkspaceCanvas {
             position: { x: point.x, y: point.y },
             targetPosition: null,
             isSelected: false,
-            state: 'placed', // 新状态：placed, targeted, completed
+            state: 'placed', // New state: placed, targeted, completed
             dimensions: this.generateObjectDimensions(this.selectedObjectType)
         };
         
@@ -1115,32 +1115,32 @@ class WorkspaceCanvas {
         
         Debug.log('Object placed successfully:', objectData);
         
-        // 自动切换到目标设置模式
+        // Automatically switch to target setting mode
         this.currentObjectForTarget = objectData;
         this.autoSwitchToTargetMode();
         
-        // 触发事件
+        // Trigger event
         this.dispatchEvent('objectPlaced', objectData);
     }
     
     /**
-     * 自动切换到目标设置模式
+     * Automatically switch to target setting mode
      */
     autoSwitchToTargetMode() {
-        // 切换工具到目标设置
+        // Switch tool to target setting
         this.currentTool = 'set-target';
         
-        // 通知主应用更新工具按钮状态
+        // Notify main app to update tool button state
         this.dispatchEvent('toolChanged', { tool: 'set-target' });
         
-        // 更新光标提示
+        // Update cursor hint
         this.showMessage('Click to set target position for the placed object');
         
         Debug.log('Auto-switched to target setting mode');
     }
     
     /**
-     * 创建可视化物品
+     * Create visual object
      */
     createVisualObject(objectData) {
         if (!objectData.dimensions) {
